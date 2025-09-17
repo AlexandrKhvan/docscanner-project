@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocScan</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+      .card { border: 1px solid #555; border-radius: 14px; padding: 16px; max-width: 1080px; box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+      button, select { padding: 10px 16px; border-radius: 10px; border: 1px solid #777; cursor: pointer; background: transparent; color: inherit; }
+      .row { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+      .muted { opacity: .85; }
+      .spacer { height: 12px; }
+      .hr { height:1px; background: #666; opacity:.3; margin: 12px 0; }
+      .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+      .thumb { border:1px solid #666; border-radius:10px; padding:8px; }
+      .thumb img { width:100%; border-radius:8px; display:block; }
+      .actions { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+      a.btn { text-decoration:none; padding: 10px 16px; border-radius: 10px; border:1px solid #777; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>DocScan</h1>
+      <p class="muted">Загрузите фото документа и получите «выпрямленный» результат с превью</p>
+
+      <div class="row">
+        <input id="file" type="file" accept="image/*" multiple />
+        <select id="mode">
+          <option value="bw">Ч/б</option>
+          <option value="gray">Серый</option>
+          <option value="color" selected>Цветной</option>
+        </select>
+        <select id="q">
+          <option value="1800">Обычное</option>
+          <option value="2200" selected>Высокое</option>
+          <option value="3000">Очень высокое</option>
+        </select>
+        <button id="btn">Сканировать</button>
+      </div>
+
+      <div class="spacer"></div>
+      <div id="status" class="muted"></div>
+      <div class="spacer"></div>
+
+      <div id="previews" class="grid"></div>
+
+      <div class="spacer"></div>
+      <div id="single-actions" class="actions" style="display:none">
+        <button id="save-png">Скачать PNG</button>
+        <button id="save-jpg">Скачать JPG</button>
+        <button id="save-pdf">Скачать PDF</button>
+      </div>
+      <div id="batch-actions" class="actions" style="display:none">
+        <button id="save-batch-pdf">Скачать PDF (пакетом)</button>
+        <button id="save-batch-zip">Скачать ZIP (пакетом)</button>
+      </div>
+
+      <div class="hr"></div>
+      <div class="muted">API: <code>POST /scan?mode=bw|gray|color&long_side=2400&fmt=png|jpg|pdf</code><br>
+      <code>POST /scan/batch?out=pdf|zip&img_fmt=png|jpg</code></div>
+    </div>
+
+    <script>
+      const $ = s => document.querySelector(s);
+      const fileInput = $('#file');
+      const modeSel = $('#mode');
+      const qSel = $('#q');
+      const status = $('#status');
+      const previews = $('#previews');
+
+      // храним результаты по файлам
+      let results = []; // [{name, blob(url)}]
+
+      function resetUI(){
+        results = [];
+        previews.innerHTML = '';
+        $('#single-actions').style.display = 'none';
+        $('#batch-actions').style.display = 'none';
+        status.textContent = '';
+      }
+
+      async function scanOne(file){
+        const q = qSel.value, mode = modeSel.value;
+        const fd = new FormData(); fd.append('file', file);
+        const res = await fetch(`/scan?mode=${mode}&long_side=${q}&fmt=png`, { method:'POST', body: fd });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        results.push({ name: file.name.replace(/\.[^.]+$/,''), blob, url });
+        // превью
+        const div = document.createElement('div');
+        div.className = 'thumb';
+        div.innerHTML = `<div class="muted">${file.name}</div><img src="${url}" alt="preview">`;
+        previews.appendChild(div);
+      }
+
+      async function scanAll(files){
+        resetUI();
+        const list = [...files];
+        status.textContent = `Обработка ${list.length} файл(ов)…`;
+        for (let i=0; i<list.length; i++){
+          status.textContent = `(${i+1}/${list.length}) ${list[i].name}…`;
+          await scanOne(list[i]);
+        }
+        status.textContent = `Готово: ${list.length} превью.`;
+
+        if (results.length === 1){
+          $('#single-actions').style.display = 'flex';
+          $('#batch-actions').style.display = 'none';
+        } else if (results.length > 1){
+          $('#single-actions').style.display = 'none';
+          $('#batch-actions').style.display = 'flex';
+        }
+      }
+
+      // кнопка «Сканировать»
+      $('#btn').onclick = async () => {
+        const files = fileInput.files;
+        if (!files.length){ alert('Выберите файл(ы)'); return; }
+        try { await scanAll(files); } catch(e){ status.textContent = e.message || 'Ошибка'; }
+      };
+
+      // одиночные скачивания берём из сервера — чтобы не держать всё в памяти
+      $('#save-png').onclick = () => downloadSingle('png');
+      $('#save-jpg').onclick = () => downloadSingle('jpg');
+      $('#save-pdf').onclick = () => downloadSingle('pdf');
+
+      async function downloadSingle(fmt){
+        const q = qSel.value, mode = modeSel.value;
+        const file = fileInput.files[0];
+        const fd = new FormData(); fd.append('file', file);
+        const res = await fetch(`/scan?mode=${mode}&long_side=${q}&fmt=${fmt}`, { method:'POST', body: fd });
+        if (!res.ok){ alert('Ошибка скачивания'); return; }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const stem = file.name.replace(/\.[^.]+$/,'');
+        a.download = `${stem}.${fmt === 'pdf' ? 'pdf' : fmt}`;
+        a.click();
+      }
+
+      // пакетные скачивания делаем через спец-эндпоинт
+      $('#save-batch-pdf').onclick = async () => {
+        const q = qSel.value, mode = modeSel.value;
+        const fd = new FormData();
+        [...fileInput.files].forEach(f => fd.append('files', f, f.name));
+        const res = await fetch(`/scan/batch?out=pdf&img_fmt=jpg&mode=${mode}&long_side=${q}`, { method:'POST', body: fd });
+        if (!res.ok){ alert('Ошибка'); return; }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `scans.pdf`;
+        a.click();
+      };
+      $('#save-batch-zip').onclick = async () => {
+        const q = qSel.value, mode = modeSel.value;
+        const fd = new FormData();
+        [...fileInput.files].forEach(f => fd.append('files', f, f.name));
+        const res = await fetch(`/scan/batch?out=zip&img_fmt=jpg&mode=${mode}&long_side=${q}`, { method:'POST', body: fd });
+        if (!res.ok){ alert('Ошибка'); return; }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `scans.zip`;
+        a.click();
+      };
+
+      fileInput.addEventListener('change', resetUI);
+    </script>
+  </body>
+</html>
