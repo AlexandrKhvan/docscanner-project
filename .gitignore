@@ -1,20 +1,16 @@
 # Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-
-# venv
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 .venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Outputs
-*.png
-*.jpg
-*.jpeg
-*.pdf
-
-#pycharm
-.idea
