@@ -404,6 +404,7 @@ def scan(
     target_long_side: int | None = 2400,
     trim: bool = True,
     trim_margin_px: int = 8,
+    **kwargs,
 ) -> np.ndarray:
     # нормализация цвета/шума
     img = _gray_world_wb(image_bgr)
