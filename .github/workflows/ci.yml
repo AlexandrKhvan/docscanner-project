@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]   # гоняем тесты на пуши в main
+  pull_request:          # и на PR'ы в main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install deps
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Disable heavy DL (optional)
+        run: echo "DOCSCAN_DISABLE_HED=1" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: pytest --maxfail=1 --durations=10 --cov=docscan --cov-report=term-missing
