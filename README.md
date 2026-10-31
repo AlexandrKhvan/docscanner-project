@@ -22,7 +22,7 @@
 
 ~~~powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r docscan/requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m uvicorn docscan.api.main:app --reload --port 8000
 ~~~
 
@@ -33,7 +33,7 @@ python -m venv .venv
 
 ~~~bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -r docscan/requirements.txt
+.venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m uvicorn docscan.api.main:app --reload --port 8000
 ~~~
 

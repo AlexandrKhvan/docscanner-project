@@ -1,4 +1,5 @@
--r docscan/requirements.txt
+-r requirements.txt
 pytest
+pytest-cov
 httpx
 pikepdf

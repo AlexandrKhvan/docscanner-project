@@ -2,23 +2,26 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
 
-# venv
+# Environments
 .venv/
 venv/
-.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+.vs/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Outputs
+# Generated outputs
 *.png
 *.jpg
 *.jpeg
 *.pdf
-
-#pycharm
-.idea
-.vscode
-.vs
