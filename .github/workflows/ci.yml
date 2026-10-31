@@ -13,6 +13,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
@@ -30,3 +34,6 @@ jobs:
 
       - name: Run tests
         run: python -m pytest --maxfail=1 --durations=10 --cov=docscan --cov-report=term-missing
+
+      - name: Test editor
+        run: node --test tests/editor-geometry.test.cjs tests/editor-session.test.cjs

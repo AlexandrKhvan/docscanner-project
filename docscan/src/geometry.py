@@ -2,13 +2,20 @@ import numpy as np
 import cv2
 
 def order_points(pts: np.ndarray) -> np.ndarray:
-    s = pts.sum(axis=1)
-    diff = np.diff(pts, axis=1)
-    tl = pts[np.argmin(s)]
-    br = pts[np.argmax(s)]
-    tr = pts[np.argmin(diff)]
-    bl = pts[np.argmax(diff)]
-    return np.array([tl, tr, br, bl], dtype="float32")
+    """Order a convex quad clockwise, starting at its top-left corner."""
+    pts = np.asarray(pts, dtype=np.float32)
+    if pts.shape != (4, 2) or not np.isfinite(pts).all():
+        raise ValueError("Expected four finite 2D points")
+    hull = cv2.convexHull(pts).reshape(-1, 2)
+    if len(hull) != 4 or cv2.contourArea(hull) < 1:
+        raise ValueError("Points must form a non-degenerate convex quadrilateral")
+    center = pts.mean(axis=0)
+    angles = np.arctan2(pts[:, 1] - center[1], pts[:, 0] - center[0])
+    ordered = pts[np.argsort(angles)]
+    # Unlike separate sum/difference extrema, this never duplicates a corner
+    # when two corners have equal sums (e.g. a document rotated by 45 degrees).
+    first = np.lexsort((ordered[:, 1], ordered.sum(axis=1)))[0]
+    return np.roll(ordered, -first, axis=0)
 
 def rotate_bound(image, angle_deg: float):
     # поворот без обрезки (для deskew)
@@ -44,11 +51,9 @@ def four_point_transform(
     maxHeight = max(min_side, maxHeight)
 
     if target_long_side is not None:
-        long_now = max(maxWidth, maxHeight)
-        if long_now < target_long_side:
-            scale = float(target_long_side) / float(long_now)
-            maxWidth = int(round(maxWidth * scale))
-            maxHeight = int(round(maxHeight * scale))
+        scale = float(target_long_side) / max(maxWidth, maxHeight)
+        maxWidth = max(1, int(round(maxWidth * scale)))
+        maxHeight = max(1, int(round(maxHeight * scale)))
 
     dst = np.array(
         [[0, 0],

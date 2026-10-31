@@ -1,173 +1,657 @@
 <!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DocScan</title>
-    <style>
-      :root { color-scheme: light dark; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
-      .card { border: 1px solid #555; border-radius: 14px; padding: 16px; max-width: 1080px; box-shadow: 0 6px 24px rgba(0,0,0,.06); }
-      button, select { padding: 10px 16px; border-radius: 10px; border: 1px solid #777; cursor: pointer; background: transparent; color: inherit; }
-      .row { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-      .muted { opacity: .85; }
-      .spacer { height: 12px; }
-      .hr { height:1px; background: #666; opacity:.3; margin: 12px 0; }
-      .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
-      .thumb { border:1px solid #666; border-radius:10px; padding:8px; }
-      .thumb img { width:100%; border-radius:8px; display:block; }
-      .actions { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
-      a.btn { text-decoration:none; padding: 10px 16px; border-radius: 10px; border:1px solid #777; }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>DocScan</h1>
-      <p class="muted">Загрузите фото документа и получите «выпрямленный» результат с превью</p>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>DocScanner — сканер документов</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b0d12;--panel:#121826;--muted:#8b96a8;--text:#e6edf7;--brand:#6aa2ff;--brand-2:#3f83f8;--ok:#2ecc71;--warn:#f1c40f;--err:#e74c3c;--shadow:0 10px 30px rgba(0,0,0,.35);
+      --card:#0f1420;--input:#151c2c;--stroke:#212b41;--chip:#1a2438
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb;--panel:#ffffff;--muted:#6b7280;--text:#111827;--brand:#2563eb;--brand-2:#1d4ed8;--ok:#16a34a;--warn:#f59e0b;--err:#dc2626;--shadow:0 8px 26px rgba(17,24,39,.08);
+      --card:#ffffff;--input:#ffffff;--stroke:#e5e7eb;--chip:#f3f4f6
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    a{color:var(--brand);text-decoration:none}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;font-weight:700;box-shadow:var(--shadow)}
+    .title{font-size:20px;font-weight:700}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .btn{border:0;border-radius:12px;padding:10px 14px;background:var(--brand);color:#fff;cursor:pointer;transition:transform .05s ease,opacity .2s;background-image:linear-gradient(180deg,transparent,rgba(0,0,0,.05))}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--stroke)}
+    .btn.ghost{background:transparent;color:var(--muted)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .progress{height:6px;overflow:hidden;border-radius:999px;background:var(--stroke)}
+    .progress i{display:block;height:100%;width:0;background:var(--brand);transition:width .2s}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns:320px 1fr}}
+    .panel{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;box-shadow:var(--shadow)}
+    .panel .section{padding:16px;border-bottom:1px solid var(--stroke)}
+    .panel .section:last-child{border-bottom:0}
+    .subtle{color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .control{display:flex;flex-direction:column;gap:6px;flex:1 min(240px)}
+    label{font-size:13px;color:var(--muted)}
+    input[type="number"],select,input[type="text"]{padding:10px 12px;border-radius:12px;border:1px solid var(--stroke);background:var(--input);color:var(--text);outline:none}
+    input[type="range"]{width:100%}
+    .switch{display:flex;gap:8px;align-items:center}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--stroke);font-size:13px;color:var(--muted)}
+    .drop{border:2px dashed var(--stroke);border-radius:16px;padding:24px;text-align:center;background:linear-gradient(0deg,rgba(0,0,0,.03),transparent)}
+    .drop.drag{border-color:var(--brand)}
+    .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:12px}
+    .thumb{aspect-ratio:1;border:1px solid var(--stroke);border-radius:10px;background:var(--card);display:grid;place-items:center;overflow:hidden;font-size:12px;color:var(--muted);position:relative}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .thumb .name{position:absolute;left:6px;right:6px;bottom:6px;background:rgba(0,0,0,.5);color:#fff;border-radius:8px;padding:2px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .thumb .mark{position:absolute;top:6px;right:6px;background:#10b981;color:#fff;border-radius:999px;font-size:11px;padding:2px 6px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .preview{padding:12px}
+    .preview img{max-width:100%;border-radius:12px;border:1px solid var(--stroke)}
+    .hidden{display:none}
+    .toast{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:10px;z-index:1000}
+    .toast .t{padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--stroke);box-shadow:var(--shadow);font-size:14px}
+    .t.ok{border-color:rgba(46,204,113,.5)}
+    .t.err{border-color:rgba(231,76,60,.5)}
+    .footer{margin-top:18px;color:var(--muted);font-size:12px}
+    .seg{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .seg .chip{cursor:pointer;user-select:none}
+    .seg .chip.active{outline:2px solid var(--brand);color:var(--text)}
 
-      <div class="row">
-        <input id="file" type="file" accept="image/*" multiple />
-        <select id="mode">
-          <option value="bw">Ч/б</option>
-          <option value="gray">Серый</option>
-          <option value="color" selected>Цветной</option>
-        </select>
-        <select id="q">
-          <option value="1800">Обычное</option>
-          <option value="2200" selected>Высокое</option>
-          <option value="3000">Очень высокое</option>
-        </select>
-        <button id="btn">Сканировать</button>
+    /* ===== modal editor ===== */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
+    .modal.show{display:flex}
+    .dlg{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;box-shadow:var(--shadow);width:min(96vw,1200px);height:min(92vh,820px);display:flex;flex-direction:column}
+    .dlg header{padding:12px 14px;border-bottom:1px solid var(--stroke);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .dlg main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 280px}
+    .stage{position:relative;background:#17202e;min-height:200px;overflow:hidden}
+    body.editor-open{overflow:hidden}
+    .canvas-wrap{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none}
+    .canvas-wrap.locked{pointer-events:none}
+    .canvas-wrap[data-tool="brush"]{cursor:crosshair}
+    .canvas-wrap.drag{cursor:grabbing}
+    canvas#edCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto;pointer-events:none}
+    .overlay{position:absolute;inset:0;pointer-events:none}
+    .rect-box{position:absolute;pointer-events:auto;cursor:move;touch-action:none}
+    .handle{position:absolute;width:14px;height:14px;background:#00b3ff;border:2px solid #fff;border-radius:3px;transform:translate(-50%,-50%);cursor:nwse-resize}
+    .handle.n{top:0;left:50%;cursor:ns-resize}
+    .handle.s{top:100%;left:50%;cursor:ns-resize}
+    .handle.w{left:0;top:50%;cursor:ew-resize}
+    .handle.e{left:100%;top:50%;cursor:ew-resize}
+    .handle.nw{top:0;left:0}
+    .handle.ne{top:0;left:100%;cursor:nesw-resize}
+    .handle.sw{top:100%;left:0;cursor:nesw-resize}
+    .handle.se{top:100%;left:100%}
+    .quad{position:absolute;inset:0;pointer-events:none}
+    .quad .pt{position:absolute;width:14px;height:14px;background:#22d3ee;border:2px solid #fff;border-radius:999px;transform:translate(-50%,-50%);pointer-events:auto;cursor:move}
+    .quad .edge{position:absolute;border:2px dashed rgba(34,211,238,.9);pointer-events:none}
+    .tools .chip{cursor:pointer}
+    .tools .chip.active{outline:2px solid var(--brand)}
+    .sidebar{border-left:1px solid var(--stroke);padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+    .sidebar .row{justify-content:space-between}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;background:var(--chip);border:1px solid var(--stroke);padding:2px 6px;border-radius:6px;font-size:12px;color:var(--muted)}
+    .brushHud{position:absolute;left:16px;top:16px;background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:10px;font-size:12px;pointer-events:none}
+    .pager{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .editor-status{padding:9px 14px;border-top:1px solid var(--stroke);font-size:13px;min-height:38px}
+    .edit-preview{border:1px solid var(--stroke);border-radius:12px;padding:10px;background:var(--card)}
+    .edit-preview img{width:100%;max-height:230px;object-fit:contain;background:#d9dee7;display:block;margin:8px 0}
+    .edit-preview img.hidden{display:none}
+    .edit-preview img.stale{opacity:.4}
+    .edit-preview .subtle{font-size:12px}
+    @media(max-width:760px){
+      .dlg{height:96dvh;width:98vw}
+      .dlg main{grid-template-columns:1fr;grid-template-rows:minmax(200px,1fr) auto}
+      .sidebar{border-left:0;border-top:1px solid var(--stroke);max-height:220px}
+      .dlg header .subtle{display:none}
+      .pager .btn{padding:8px 10px;font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo">DS</div>
+        <div class="title">DocScanner</div>
       </div>
-
-      <div class="spacer"></div>
-      <div id="status" class="muted"></div>
-      <div class="spacer"></div>
-
-      <div id="previews" class="grid"></div>
-
-      <div class="spacer"></div>
-      <div id="single-actions" class="actions" style="display:none">
-        <button id="save-png">Скачать PNG</button>
-        <button id="save-jpg">Скачать JPG</button>
-        <button id="save-pdf">Скачать PDF</button>
+      <div class="toolbar">
+        <button class="btn secondary" id="themeBtn">Тема: светлая</button>
+        <a class="btn ghost" href="https://github.com/AlexandrKhvan/docscanner-project" target="_blank" rel="noopener">GitHub</a>
       </div>
-      <div id="batch-actions" class="actions" style="display:none">
-        <button id="save-batch-pdf">Скачать PDF (пакетом)</button>
-        <button id="save-batch-zip">Скачать ZIP (пакетом)</button>
-      </div>
-
-      <div class="hr"></div>
-      <div class="muted">API: <code>POST /scan?mode=bw|gray|color&long_side=2400&fmt=png|jpg|pdf</code><br>
-      <code>POST /scan/batch?out=pdf|zip&img_fmt=png|jpg</code></div>
     </div>
 
-    <script>
-      const $ = s => document.querySelector(s);
-      const fileInput = $('#file');
-      const modeSel = $('#mode');
-      const qSel = $('#q');
-      const status = $('#status');
-      const previews = $('#previews');
+    <div class="grid">
+      <!-- LEFT: Controls -->
+      <div class="panel">
+        <div class="section">
+          <div class="row">
+            <div class="control" style="flex:1 100%">
+              <label>Файлы</label>
+              <div id="drop" class="drop">
+                <div>Перетащите сюда изображения или <label for="file" style="color:var(--brand);cursor:pointer">выберите</label></div>
+                <input id="file" type="file" accept="image/*" multiple class="hidden">
+              </div>
+              <div id="thumbs" class="thumbs"></div>
+            </div>
+          </div>
+        </div>
 
-      // храним результаты по файлам
-      let results = []; // [{name, blob(url)}]
+        <div class="section">
+          <div class="row">
+            <div class="control">
+              <label>Режим вывода</label>
+              <div class="seg" id="modeSeg">
+                <span class="chip" data-val="bw">Ч/Б</span>
+                <span class="chip" data-val="gray">Серый</span>
+                <span class="chip" data-val="color">Цвет</span>
+              </div>
+            </div>
+            <div class="control">
+              <label>Длинная сторона (px)</label>
+              <input id="longSide" type="number" min="600" max="6000" step="100" value="2400">
+            </div>
+            <div class="control" style="flex:1 100%">
+              <label for="textStrength">Чёткость текста: <span id="textStrengthVal">50%</span></label>
+              <input id="textStrength" type="range" min="0" max="100" step="5" value="50">
+              <div class="subtle" style="font-size:12px">Контраст и резкость букв. 0 — выключено. Результат можно сравнить в предпросмотре.</div>
+            </div>
+            <div class="control">
+              <label>Формат</label>
+              <div class="seg" id="fmtSeg">
+                <span class="chip" data-val="png">PNG</span>
+                <span class="chip" data-val="jpg">JPG</span>
+                <span class="chip" data-val="pdf">PDF</span>
+              </div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label class="switch"><input type="checkbox" id="align" checked> Выровнять (перспектива)</label>
+            <label class="switch"><input type="checkbox" id="trim" checked> Обрезать поля (trim)</label>
+          </div>
+          <div class="subtle" style="font-size:12px;margin-top:8px">Для файлов с применёнными ручными правками автоматическое выравнивание и обрезка отключаются.</div>
+        </div>
 
-      function resetUI(){
-        results = [];
-        previews.innerHTML = '';
-        $('#single-actions').style.display = 'none';
-        $('#batch-actions').style.display = 'none';
-        status.textContent = '';
+        <div class="section" id="trimSection">
+          <div class="row">
+            <div class="control">
+              <label>Внутренний отступ (px)</label>
+              <input id="trimMargin" type="number" min="0" max="40" step="1" value="0">
+            </div>
+            <div class="control">
+              <label>Жёсткость трима: <span id="trimThrVal">0.22</span></label>
+              <input id="trimThr" type="range" min="0.05" max="0.60" step="0.01" value="0.22">
+            </div>
+            <div class="control">
+              <label>Устойчивость (строки/столбцы): <span id="trimSustainVal">6</span></label>
+              <input id="trimSustain" type="range" min="3" max="40" step="1" value="6">
+            </div>
+            <div class="control">
+              <label>Запас снаружи (px): <span id="trimPadVal">12</span></label>
+              <input id="trimPad" type="range" min="0" max="40" step="1" value="12">
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:8px">
+            <span class="subtle">Пресеты:</span>
+            <span class="chip preset" data-thr="0.28" data-sus="5" data-pad="6">Тени сверху/снизу</span>
+            <span class="chip preset" data-thr="0.18" data-sus="8" data-pad="10">Светлый стол / кремовая бумага</span>
+            <span class="chip preset" data-thr="0.32" data-sus="4" data-pad="4">Агрессивно убрать поля</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <button class="btn" id="btnOne">Сканировать 1 файл</button>
+            <button class="btn secondary" id="btnPdf">PDF (пакет)</button>
+            <button class="btn secondary" id="btnZip">ZIP (пакет)</button>
+            <button class="btn secondary" id="btnEdit">Редактировать (1/много)</button>
+          </div>
+          <div class="progress" style="margin-top:12px"><i id="bar"></i></div>
+          <div class="subtle" id="hint" style="margin-top:8px">Файлы не выбраны</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Preview -->
+      <div class="panel preview">
+        <h3 style="margin:6px 0 12px">Предпросмотр</h3>
+        <button class="btn secondary" id="btnPreview">Посмотреть и поправить автообрезку</button>
+        <p class="subtle" style="font-size:13px">Проверьте найденные границы на исходном фото. В редакторе можно вернуть поля и увидеть результат до сохранения.</p>
+        <img id="preview" alt="preview" class="hidden">
+        <div id="downloads" class="actions" style="margin-top:12px"></div>
+        <div class="footer">Загрузите изображения до 20 МБ и 40 Мп, не более 20 за раз. Результат можно скачать как PNG, JPG, PDF или ZIP. При пакетной обработке используются ваши правки по каждому файлу.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: Editor (Rect/Perspective/Brush/Rotate) ===== -->
+  <div class="modal" id="edModal" aria-hidden="true">
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <header>
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong id="editorTitle">Редактор</strong>
+          <span class="subtle">Колёсико — масштаб · Пробел + перетаскивание — перемещение</span>
+        </div>
+        <div class="pager">
+          <button class="btn secondary" id="prevBtn">⟨ Пред</button>
+          <div class="chip" id="pageInfo">1 / 1</div>
+          <button class="btn secondary" id="nextBtn">След ⟩</button>
+          <button class="btn secondary" id="fitBtn">Вписать</button>
+          <button class="btn secondary" id="cancelBtn">Закрыть (Esc)</button>
+          <button class="btn" id="applyBtn">Применить (Enter)</button>
+        </div>
+      </header>
+      <main>
+        <div class="stage">
+          <div class="canvas-wrap" id="wrap">
+            <canvas id="edCanvas" width="900" height="640"></canvas>
+
+            <!-- Rect crop UI -->
+            <div class="overlay" id="rectUi">
+              <div class="rect-box" id="rectBox">
+                <div class="handle nw"></div>
+                <div class="handle ne"></div>
+                <div class="handle sw"></div>
+                <div class="handle se"></div>
+                <div class="handle n"></div>
+                <div class="handle s"></div>
+                <div class="handle w"></div>
+                <div class="handle e"></div>
+              </div>
+            </div>
+
+            <!-- Perspective quad UI -->
+            <div class="overlay quad" id="quadUi">
+              <div class="pt" id="q0"></div>
+              <div class="pt" id="q1"></div>
+              <div class="pt" id="q2"></div>
+              <div class="pt" id="q3"></div>
+            </div>
+
+            <!-- Brush HUD -->
+            <div class="brushHud hidden" id="brushHud">Кисть: <span id="brushSizeLbl">32</span> px | ЛКМ — рисовать, ПКМ — ластик</div>
+          </div>
+        </div>
+        <aside class="sidebar">
+          <div class="edit-preview">
+            <strong>Результат обрезки</strong>
+            <img id="editPreview" class="hidden" alt="Предпросмотр выбранной области с обработкой текста">
+            <div class="subtle" id="editPreviewStatus" role="status" aria-live="polite"></div>
+            <a id="previewFull" class="hidden" target="_blank" rel="noopener">Открыть в полном размере</a>
+            <button type="button" class="btn secondary" id="refreshPreview" style="margin-top:8px">Обновить предпросмотр</button>
+            <label for="previewMode" style="display:block;margin-top:10px">Режим результата</label>
+            <select id="previewMode"><option value="bw">Ч/Б</option><option value="gray">Серый</option><option value="color">Цвет</option></select>
+            <label for="editorTextStrength" style="display:block;margin-top:10px">Чёткость текста: <span id="editorTextStrengthVal">50%</span></label>
+            <input id="editorTextStrength" type="range" min="0" max="100" step="5" value="50">
+            <div class="subtle">Режим и чёткость также применятся к итоговому скану.</div>
+          </div>
+          <button class="btn secondary" id="autoCrop">Найти границы автоматически</button>
+          <button class="btn secondary" id="expandCrop">Больше полей</button>
+          <div class="row">
+            <div class="tools seg" id="toolSeg">
+              <button type="button" class="chip" data-tool="pan">Перемещение</button>
+              <button type="button" class="chip" data-tool="rect">Обрезка</button>
+              <button type="button" class="chip" data-tool="persp">Четыре угла</button>
+              <button type="button" class="chip" data-tool="brush">Кисть</button>
+              <button type="button" class="chip" data-tool="rotate">Поворот</button>
+            </div>
+          </div>
+
+          <div id="rectPanel">
+            <div class="row"><span class="subtle">Соотношение</span>
+              <select id="aspectSel">
+                <option value="free">Свободно</option>
+                <option value="1:1">1:1</option>
+                <option value="3:2">3:2</option>
+                <option value="4:3">4:3</option>
+                <option value="5:7">5:7</option>
+                <option value="A4">A4</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="perspPanel" class="hidden">
+            <div class="subtle">Поставьте точки по углам листа. При применении лист выпрямится. Пересекать стороны нельзя.</div>
+            <div class="row" style="margin-top:6px"><button class="btn secondary" id="resetQuad">Углы исходного фото</button></div>
+          </div>
+
+          <div id="brushPanel" class="hidden">
+            <div class="row">
+              <label for="brushSize">Диаметр кисти в пикселях фото</label>
+              <input id="brushSize" type="range" min="8" max="120" step="1" value="32">
+            </div>
+            <div class="subtle">Закрашенные участки станут белыми. ПКМ или Alt + перетаскивание — стереть маску.</div>
+            <div class="row" style="margin-top:6px">
+              <button class="btn secondary" id="clearMask">Очистить маску</button>
+            </div>
+          </div>
+
+          <div id="rotatePanel" class="hidden">
+            <div class="row">
+              <button class="btn secondary" id="rotL">⟲ -90°</button>
+              <button class="btn secondary" id="rotR">⟳ +90°</button>
+            </div>
+            <div class="row">
+              <button class="btn secondary" id="rotM1">-1°</button>
+              <button class="btn secondary" id="rotP1">+1°</button>
+            </div>
+            <div class="row">
+              <button class="btn secondary" id="rotReset">Сброс</button>
+            </div>
+          </div>
+          <button class="btn secondary" id="resetSelection">Убрать выделение</button>
+          <button class="btn secondary" id="resetFile">Вернуть исходное фото</button>
+          <div class="subtle" style="font-size:12px">Черновики сохраняются при переходе между страницами и закрытии окна. Нажмите «Применить», чтобы включить правки в результат.</div>
+        </aside>
+      </main>
+      <div class="editor-status" id="editorStatus" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/editor-geometry.js"></script>
+  <script src="/static/editor.js"></script>
+  <script>
+    // ====== THEME
+    const themeBtn = document.getElementById('themeBtn');
+    const rootHtml = document.documentElement;
+    const updateThemeLabel = ()=> themeBtn.textContent = 'Тема: ' + (rootHtml.dataset.theme === 'light' ? 'светлая' : 'тёмная');
+    themeBtn.onclick = ()=>{ rootHtml.dataset.theme = (rootHtml.dataset.theme === 'light') ? 'dark' : 'light'; updateThemeLabel(); };
+    updateThemeLabel();
+
+    // ====== BASIC UI refs
+    const fileInp = document.getElementById('file');
+    const drop = document.getElementById('drop');
+    const thumbs = document.getElementById('thumbs');
+    const longSide = document.getElementById('longSide');
+    const align = document.getElementById('align');
+    const trim = document.getElementById('trim');
+    const trimSection = document.getElementById('trimSection');
+    const trimMargin = document.getElementById('trimMargin');
+    const trimThr = document.getElementById('trimThr');
+    const trimSustain = document.getElementById('trimSustain');
+    const trimPad = document.getElementById('trimPad');
+    const trimThrVal = document.getElementById('trimThrVal');
+    const trimSustainVal = document.getElementById('trimSustainVal');
+    const trimPadVal = document.getElementById('trimPadVal');
+    const btnOne = document.getElementById('btnOne');
+    const btnPdf = document.getElementById('btnPdf');
+    const btnZip = document.getElementById('btnZip');
+    const btnEdit = document.getElementById('btnEdit');
+    const btnPreview = document.getElementById('btnPreview');
+    const textStrength = document.getElementById('textStrength');
+    const textStrengthVal = document.getElementById('textStrengthVal');
+    const hint = document.getElementById('hint');
+    const bar = document.getElementById('bar');
+    const preview = document.getElementById('preview');
+    const downloads = document.getElementById('downloads');
+    const toast = document.getElementById('toast');
+    let busy = false;
+    let editor;
+    let resultUrl = null;
+    const thumbUrls = [];
+    let acceptedFiles = [];
+
+    function clearResult(){
+      preview.removeAttribute('src');
+      preview.classList.add('hidden');
+      downloads.innerHTML = '';
+      if (resultUrl){ URL.revokeObjectURL(resultUrl); resultUrl = null; }
+    }
+
+    function updateButtons(){
+      const n = fileInp.files.length;
+      btnOne.disabled = busy || n !== 1;
+      btnPdf.disabled = busy || n < 2;
+      btnZip.disabled = busy || n < 2;
+      btnEdit.disabled = busy || n < 1;
+      btnPreview.disabled = busy || n < 1;
+      fileInp.disabled = busy;
+      thumbs.style.pointerEvents = busy ? 'none' : '';
+    }
+
+    function setBusy(value){ busy = value; updateButtons(); }
+
+    async function responseError(res){
+      const body = await res.json().catch(()=>null);
+      if (typeof body?.detail === 'string') return body.detail;
+      if (Array.isArray(body?.detail)) return body.detail.map(e=>`${e.loc.at(-1)}: ${e.msg}`).join('; ');
+      return body?.error || `Ошибка сервера (${res.status})`;
+    }
+
+    // segmented
+    function initSeg(seg, def){
+      const chips = [...seg.querySelectorAll('.chip')];
+      let value = def;
+      const render=()=>chips.forEach(c=>c.classList.toggle('active', c.dataset.val===value));
+      chips.forEach(c=>c.onclick=()=>{ value=c.dataset.val; render(); onChanged(); });
+      render();
+      return { get value(){return value;}, set(v){value=v; render(); onChanged();} };
+    }
+    const mode = initSeg(document.getElementById('modeSeg'), 'bw');
+    const fmt = initSeg(document.getElementById('fmtSeg'), 'png');
+
+    // drop zone
+    ;['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+    ;['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+    drop.addEventListener('drop', e=>{
+      const files = [...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+      if (files.length){ setFiles(files); }
+    });
+    drop.addEventListener('click', e=>{
+      if (!busy && e.target !== fileInp && !e.target.closest('label')) fileInp.click();
+    });
+    fileInp.addEventListener('change', ()=> setFiles([...fileInp.files]));
+
+    function setFiles(files){
+      if (busy) return;
+      const error = files.length > 20 ? 'Выберите не более 20 изображений'
+        : files.some(f=>f.size > 20*1024*1024) ? 'Размер каждого изображения должен быть не больше 20 МБ' : null;
+      if (error){
+        const previous = new DataTransfer();
+        acceptedFiles.forEach(f=>previous.items.add(f));
+        fileInp.files = previous.files;
+        toastMsg(error, false); return;
       }
+      const dt = new DataTransfer();
+      files.forEach(f=>dt.items.add(f));
+      fileInp.files = dt.files;
+      acceptedFiles = files;
+      editor.clear();
+      edited.clear(); // сбрасываем все кастомные правки при новой загрузке
+      renderThumbs();
+      onChanged();
+    }
 
-      async function scanOne(file){
-        const q = qSel.value, mode = modeSel.value;
-        const fd = new FormData(); fd.append('file', file);
-        const res = await fetch(`/scan?mode=${mode}&long_side=${q}&fmt=png`, { method:'POST', body: fd });
-        if (!res.ok) throw new Error(await res.text());
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        results.push({ name: file.name.replace(/\.[^.]+$/,''), blob, url });
-        // превью
-        const div = document.createElement('div');
-        div.className = 'thumb';
-        div.innerHTML = `<div class="muted">${file.name}</div><img src="${url}" alt="preview">`;
-        previews.appendChild(div);
-      }
+    // ====== per-file edited storage
+    // Map index -> File (PNG blob with edits)
+    const edited = new Map();
 
-      async function scanAll(files){
-        resetUI();
-        const list = [...files];
-        status.textContent = `Обработка ${list.length} файл(ов)…`;
-        for (let i=0; i<list.length; i++){
-          status.textContent = `(${i+1}/${list.length}) ${list[i].name}…`;
-          await scanOne(list[i]);
+    async function renderThumbs(){
+      thumbUrls.splice(0).forEach(url=>URL.revokeObjectURL(url));
+      thumbs.innerHTML = '';
+      const files = [...fileInp.files];
+      const n = files.length;
+      hint.textContent = n ? `Выбрано файлов: ${n}` : 'Файлы не выбраны';
+      files.forEach((f, i)=>{
+        const url = URL.createObjectURL(edited.get(i) || f);
+        thumbUrls.push(url);
+        const el = document.createElement('button'); el.type='button'; el.className='thumb';
+        el.setAttribute('aria-label', `Редактировать: ${f.name}`);
+        const img = document.createElement('img'); img.src = url;
+        const nm = document.createElement('div'); nm.className='name'; nm.textContent = f.name;
+        el.appendChild(img); el.appendChild(nm);
+        if (edited.has(i)){
+          const m = document.createElement('div'); m.className='mark'; m.textContent='✓';
+          el.appendChild(m);
         }
-        status.textContent = `Готово: ${list.length} превью.`;
+        el.onclick = ()=>openEditor(i);
+        thumbs.appendChild(el);
+      });
+    }
 
-        if (results.length === 1){
-          $('#single-actions').style.display = 'flex';
-          $('#batch-actions').style.display = 'none';
-        } else if (results.length > 1){
-          $('#single-actions').style.display = 'none';
-          $('#batch-actions').style.display = 'flex';
+    function onChanged(){
+      updateButtons();
+      clearResult();
+      editor?.refreshOptions();
+    }
+
+    function updateTrimUI(){
+      const enabled = trim.checked;
+      trimSection.style.opacity = enabled ? '1' : '.5';
+      [trimMargin,trimThr,trimSustain,trimPad].forEach(x=>x.disabled=!enabled);
+    }
+    updateTrimUI();
+    trim.onchange = updateTrimUI;
+
+    const bind = (inp, label, fmtFn=v=>v)=>{ const r=()=>label.textContent=fmtFn(inp.value); inp.addEventListener('input',r); r(); };
+    bind(trimThr, trimThrVal, v=>Number(v).toFixed(2));
+    bind(trimSustain, trimSustainVal);
+    bind(trimPad, trimPadVal);
+    bind(textStrength, textStrengthVal, value=>value+'%');
+    textStrength.addEventListener('input', onChanged);
+    [longSide,align,trim,trimMargin,trimThr,trimSustain,trimPad].forEach(input=>input.addEventListener('change', onChanged));
+
+    document.querySelectorAll('.preset').forEach(p=>{
+      p.onclick=()=>{
+        trimThr.value = p.dataset.thr;
+        trimSustain.value = p.dataset.sus;
+        trimPad.value = p.dataset.pad;
+        ['input','change'].forEach(ev=>{
+          trimThr.dispatchEvent(new Event(ev));
+          trimSustain.dispatchEvent(new Event(ev));
+          trimPad.dispatchEvent(new Event(ev));
+        });
+        toastMsg('Пресет применён');
+      };
+    });
+
+    function setProgress(v){ bar.style.width = (v*100)+'%'; }
+    function toastMsg(msg, ok=true){
+      const t = document.createElement('div'); t.className='t ' + (ok?'ok':'err'); t.textContent = msg;
+      toast.appendChild(t);
+      setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(6px)'; }, 1800);
+      setTimeout(()=>{ t.remove(); }, 2200);
+    }
+
+    function buildQuery(base){
+      const p = new URLSearchParams();
+      p.set('mode', mode.value);
+      p.set('long_side', String(Number(longSide.value)||2400));
+      p.set('fmt', fmt.value);
+      p.set('text_strength', String(Number(textStrength.value)/100));
+      p.set('align', String(align.checked));
+      p.set('trim', String(trim.checked));
+      p.set('trim_margin', trimMargin.value === '' ? '0' : trimMargin.value);
+      if (trim.checked){
+        p.set('trim_thr', String(Number(trimThr.value)));
+        p.set('trim_sustain', String(Number(trimSustain.value)));
+        p.set('trim_pad', String(Number(trimPad.value)));
+      }
+      return base + '?' + p.toString();
+    }
+
+    // Geometry and pointer handling live in the editor modules.
+    editor = new DocScanEditor({
+      getFiles: ()=>[...fileInp.files],
+      getEdited: index=>edited.get(index),
+      onSave: (index, file)=>{ edited.set(index, file); renderThumbs(); onChanged(); },
+      onReset: index=>{ edited.delete(index); renderThumbs(); onChanged(); },
+      onError: message=>toastMsg(message, false),
+      errorMessage: responseError,
+      getOptions: ()=>({mode:mode.value,long_side:Number(longSide.value)||2400,text_strength:Number(textStrength.value)/100,
+        align:align.checked,trim:trim.checked,trim_margin:Number(trimMargin.value)||0,
+        trim_thr:Number(trimThr.value),trim_sustain:Number(trimSustain.value),trim_pad:Number(trimPad.value)}),
+      onTextStrength: value=>{textStrength.value=Math.round(value*100);textStrength.dispatchEvent(new Event('input'));},
+      onMode: value=>mode.set(value),
+    });
+    function openEditor(index=0, auto=false){ if (!busy) return editor.open(index,{auto}); }
+    btnEdit.onclick = ()=>openEditor(0);
+    btnPreview.onclick = ()=>{if(longSide.reportValidity())openEditor(0,true);};
+
+    // initial
+    function init(){ if (fileInp.files.length) renderThumbs(); onChanged(); }
+    init();
+
+    // ====== NETWORK (respect edited blobs) ======
+    async function scanOne(){
+      const n = fileInp.files.length; if (busy || n !== 1 || !longSide.reportValidity()) return;
+      const outputFormat = fmt.value;
+      setBusy(true); clearResult();
+      const f = edited.get(0) || fileInp.files[0];
+      setProgress(0.15); hint.textContent='Обработка...';
+      let url = buildQuery('/scan');
+      if (edited.has(0)){
+        const manual = new URL(url, location.href);
+        manual.searchParams.set('align', 'false'); manual.searchParams.set('trim', 'false');
+        url = manual.pathname + manual.search;
+      }
+      const fd = new FormData(); fd.append('file', f, f.name);
+      try{
+        const res = await fetch(url, { method:'POST', body: fd });
+        setProgress(0.6);
+        if (!res.ok) throw new Error(await responseError(res));
+        const ct = res.headers.get('content-type') || '';
+        const blob = await res.blob();
+        setProgress(0.85);
+        resultUrl = URL.createObjectURL(blob);
+        if (ct.startsWith('image/')){
+          const obj = resultUrl;
+          preview.src = obj; preview.classList.remove('hidden');
+          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download=`scan.${outputFormat}`; a.textContent='Скачать';
+          downloads.appendChild(a);
+        } else if (ct === 'application/pdf'){
+          const obj = resultUrl;
+          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download='scan.pdf'; a.textContent='Скачать PDF';
+          downloads.appendChild(a);
         }
-      }
+        setProgress(1); hint.textContent='Готово'; toastMsg('Сканирование завершено'); setTimeout(()=>setProgress(0), 1200);
+      }catch(e){ console.error(e); toastMsg(e.message || 'Сетевая ошибка', false); hint.textContent=e.message || 'Ошибка'; setProgress(0); }
+      finally{ setBusy(false); }
+    }
 
-      // кнопка «Сканировать»
-      $('#btn').onclick = async () => {
-        const files = fileInput.files;
-        if (!files.length){ alert('Выберите файл(ы)'); return; }
-        try { await scanAll(files); } catch(e){ status.textContent = e.message || 'Ошибка'; }
-      };
-
-      // одиночные скачивания берём из сервера — чтобы не держать всё в памяти
-      $('#save-png').onclick = () => downloadSingle('png');
-      $('#save-jpg').onclick = () => downloadSingle('jpg');
-      $('#save-pdf').onclick = () => downloadSingle('pdf');
-
-      async function downloadSingle(fmt){
-        const q = qSel.value, mode = modeSel.value;
-        const file = fileInput.files[0];
-        const fd = new FormData(); fd.append('file', file);
-        const res = await fetch(`/scan?mode=${mode}&long_side=${q}&fmt=${fmt}`, { method:'POST', body: fd });
-        if (!res.ok){ alert('Ошибка скачивания'); return; }
+    async function scanBatch(asZip){
+      const files = [...fileInp.files]; if (busy || files.length<2 || !longSide.reportValidity()) return;
+      setBusy(true); clearResult();
+      setProgress(0.15); hint.textContent='Обработка пакета...';
+      const base = buildQuery('/scan/batch');
+      const manual = new URLSearchParams();
+      files.forEach((file, i)=>{ if (edited.has(i)) manual.append('preserve', String(i)); });
+      const url = base + (asZip ? '&out=zip&img_fmt=jpg' : '&out=pdf') + '&' + manual.toString();
+      const fd = new FormData();
+      files.forEach((f, i)=>{
+        const eff = edited.get(i) || f;
+        fd.append('files', eff, eff.name);
+      });
+      try{
+        const res = await fetch(url, { method:'POST', body: fd });
+        setProgress(0.6);
+        if (!res.ok) throw new Error(await responseError(res));
+        const ct = res.headers.get('content-type') || '';
         const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        const stem = file.name.replace(/\.[^.]+$/,'');
-        a.download = `${stem}.${fmt === 'pdf' ? 'pdf' : fmt}`;
-        a.click();
-      }
+        const obj = URL.createObjectURL(blob);
+        resultUrl = obj;
+        downloads.innerHTML = '';
+        if (ct === 'application/pdf'){
+          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download='scans.pdf'; a.textContent='Скачать PDF';
+          downloads.appendChild(a);
+        } else if (ct === 'application/zip'){
+          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download='scans.zip'; a.textContent='Скачать ZIP';
+          downloads.appendChild(a);
+        }
+        setProgress(1); hint.textContent='Готово'; toastMsg('Пакет готов'); setTimeout(()=>setProgress(0), 1200);
+      }catch(e){ console.error(e); toastMsg(e.message || 'Сетевая ошибка', false); hint.textContent=e.message || 'Ошибка'; setProgress(0); }
+      finally{ setBusy(false); }
+    }
 
-      // пакетные скачивания делаем через спец-эндпоинт
-      $('#save-batch-pdf').onclick = async () => {
-        const q = qSel.value, mode = modeSel.value;
-        const fd = new FormData();
-        [...fileInput.files].forEach(f => fd.append('files', f, f.name));
-        const res = await fetch(`/scan/batch?out=pdf&img_fmt=jpg&mode=${mode}&long_side=${q}`, { method:'POST', body: fd });
-        if (!res.ok){ alert('Ошибка'); return; }
-        const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `scans.pdf`;
-        a.click();
-      };
-      $('#save-batch-zip').onclick = async () => {
-        const q = qSel.value, mode = modeSel.value;
-        const fd = new FormData();
-        [...fileInput.files].forEach(f => fd.append('files', f, f.name));
-        const res = await fetch(`/scan/batch?out=zip&img_fmt=jpg&mode=${mode}&long_side=${q}`, { method:'POST', body: fd });
-        if (!res.ok){ alert('Ошибка'); return; }
-        const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `scans.zip`;
-        a.click();
-      };
-
-      fileInput.addEventListener('change', resetUI);
-    </script>
-  </body>
+    btnOne.onclick = (e)=>{ e.preventDefault(); scanOne(); };
+    btnPdf.onclick = (e)=>{ e.preventDefault(); scanBatch(false); };
+    btnZip.onclick = (e)=>{ e.preventDefault(); scanBatch(true); };
+  </script>
+</body>
 </html>

@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-opencv-python
+# HED uses the Caffe importer, which was removed in OpenCV 5.
+opencv-python>=4.12,<5
 numpy
 Pillow
 python-multipart

@@ -1,16 +1,27 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Environments
 .venv/
 venv/
 
 # IDE
 .idea/
 .vscode/
+.vs/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated outputs
+*.png
+*.jpg
+*.jpeg
+*.pdf
