@@ -1,0 +1,4 @@
+-r docscan/requirements.txt
+pytest
+httpx
+pikepdf

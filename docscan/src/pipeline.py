@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 from .geometry import four_point_transform, order_points, rotate_bound
 from .hed import HED
+from .editing import apply_edit
 
 # ================== БАЗОВЫЕ ФИЛЬТРЫ ==================
 
@@ -25,11 +26,16 @@ def _sharpen(image, strength=0.55, radius=1.2):
     blur = cv2.GaussianBlur(image, (0, 0), radius)
     return cv2.addWeighted(image, 1 + strength, blur, -strength, 0)
 
-def _text_enhance(gray):
-    clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8,8))
-    g = clahe.apply(gray)
-    g = _sharpen(g, strength=0.25, radius=1.0)
-    return g
+def _text_enhance(gray, strength=0.5):
+    if not np.isfinite(strength) or not 0 <= strength <= 1:
+        raise ValueError("Чёткость текста должна быть от 0 до 1")
+    if strength == 0:
+        return gray.copy()
+    clahe = cv2.createCLAHE(clipLimit=1.0 + 2.0*strength, tileGridSize=(8, 8))
+    contrast = cv2.addWeighted(gray, 1-strength, clahe.apply(gray), strength, 0)
+    detail = contrast.astype(np.float32) - cv2.GaussianBlur(contrast, (0, 0), .9).astype(np.float32)
+    detail[np.abs(detail) < 2] = 0  # avoid sharpening faint scanner noise
+    return np.clip(contrast.astype(np.float32) + 1.6*strength*detail, 0, 255).astype(np.uint8)
 
 # ================== ВСПОМОГАТЕЛЬНОЕ ==================
 
@@ -178,11 +184,11 @@ def _find_doc_quad(small_bgr: np.ndarray, hed: HED | None) -> tuple[np.ndarray |
 
 # ================== ТРИМ ПО K-MEANS (С ПАРАМЕТРАМИ) ==================
 
-def _auto_trim_to_mask_kmeans(
+def _find_trim_rect(
     bgr,
-    margin_px=6,
-    pad_px=6,
-    max_shrink_ratio=0.25,
+    margin_px=0,
+    pad_px=12,
+    max_shrink_ratio=0.12,
     thr=0.22,
     sustain=6,
 ):
@@ -193,7 +199,7 @@ def _auto_trim_to_mask_kmeans(
     """
     H, W = bgr.shape[:2]
     if H < 80 or W < 80:
-        return bgr
+        return (0, 0, W, H)
 
     scale = 900.0 / max(H, W)
     if scale < 1.0:
@@ -205,7 +211,7 @@ def _auto_trim_to_mask_kmeans(
 
     bg_mask, _ = _kmeans_bg_mask(small)
     if bg_mask.mean() > 225:  # фон "захватил всё" — сомнительно
-        return bgr
+        return (0, 0, W, H)
 
     row_bg = (bg_mask.mean(axis=1) / 255.0).astype(np.float32)
     col_bg = (bg_mask.mean(axis=0) / 255.0).astype(np.float32)
@@ -258,16 +264,75 @@ def _auto_trim_to_mask_kmeans(
     x1 = min(w-1, x1 + pad); y1 = min(h-1, y1 + pad)
 
     if x1 - x0 < 30 or y1 - y0 < 30:
-        return bgr
+        return (0, 0, W, H)
 
-    X0 = int(round(x0 / scale)); Y0 = int(round(y0 / scale))
-    X1 = int(round(x1 / scale)); Y1 = int(round(y1 / scale))
-    newW = X1 - X0 + 1; newH = Y1 - Y0 + 1
+    X0 = int(round(x0 * W / w)); Y0 = int(round(y0 * H / h))
+    X1 = int(round((x1 + 1) * W / w)); Y1 = int(round((y1 + 1) * H / h))
+    newW = X1 - X0; newH = Y1 - Y0
     if newW < 50 or newH < 50:
-        return bgr
+        return (0, 0, W, H)
     if (W - newW)/W > max_shrink_ratio or (H - newH)/H > max_shrink_ratio:
-        return bgr
-    return bgr[Y0:Y1+1, X0:X1+1].copy()
+        return (0, 0, W, H)
+    return (max(0, X0), max(0, Y0), min(W, X1), min(H, Y1))
+
+def _auto_trim_to_mask_kmeans(bgr, **kwargs):
+    x0, y0, x1, y1 = _find_trim_rect(bgr, **kwargs)
+    return bgr[y0:y1, x0:x1].copy()
+
+
+def _detect_source_quad(image):
+    height, width = image.shape[:2]
+    scale = min(1.0, 1300.0 / max(height, width))
+    small = cv2.resize(image, (max(1, round(width*scale)), max(1, round(height*scale))),
+                       interpolation=cv2.INTER_AREA) if scale < 1 else image.copy()
+    if min(small.shape[:2]) < 8:
+        return None, small
+    small = cv2.fastNlMeansDenoisingColored(_gray_world_wb(small), None, 3, 3, 7, 21)
+    hed = HED(Path(__file__).resolve().parent.parent / "models" / "hed")
+    quad, _ = _find_doc_quad(small, hed if hed.available else None)
+    if quad is None:
+        return None, small
+    points = order_points(quad.reshape(4, 2)) * [width / small.shape[1], height / small.shape[0]]
+    points = np.clip(points, [0, 0], [width, height]).astype(np.float32)
+    if not cv2.isContourConvex(points) or cv2.contourArea(points) < 1:
+        return None, small
+    return points, small
+
+
+def suggest_crop(image, *, align=True, trim=True, trim_margin_px=0,
+                 _trim_thr=0.22, _trim_sustain=6, _trim_pad=12):
+    """Return editable source-image corners, retaining everything outside them."""
+    height, width = image.shape[:2]
+    points = np.array([[0, 0], [width, 0], [width, height], [0, height]], np.float32)
+    found = False
+    if align:
+        detected, _ = _detect_source_quad(image)
+        if detected is not None:
+            points, found = detected, True
+    trimmed = False
+    if trim:
+        # Analyse a small rectified copy; never discard pixels in the source.
+        scale = min(1.0, 1300.0 / max(height, width))
+        small = cv2.resize(image, (max(1, round(width*scale)), max(1, round(height*scale))),
+                           interpolation=cv2.INTER_AREA) if scale < 1 else image
+        if min(small.shape[:2]) < 2:
+            return {"quad": points.tolist(), "found": found, "trimmed": False}
+        scaled = points * [small.shape[1] / width, small.shape[0] / height]
+        paper = apply_edit(small, quad=scaled)
+        ph, pw = paper.shape[:2]
+        source_long = max(np.linalg.norm(np.roll(points, -1, axis=0) - points, axis=1))
+        paper_scale = max(ph, pw) / max(1, source_long)
+        rect = _find_trim_rect(paper, margin_px=trim_margin_px * paper_scale,
+                              pad_px=_trim_pad * paper_scale, thr=_trim_thr, sustain=_trim_sustain)
+        x0, y0, x1, y1 = rect
+        if rect != (0, 0, pw, ph):
+            destination = np.array([[0, 0], [pw, 0], [pw, ph], [0, ph]], np.float32)
+            back = cv2.getPerspectiveTransform(destination, points)
+            corners = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], np.float32)
+            points = cv2.perspectiveTransform(corners[None], back)[0]
+            points = np.clip(points, [0, 0], [width, height]).astype(np.float32)
+            trimmed = True
+    return {"quad": points.tolist(), "found": found, "trimmed": trimmed}
 
 # ================== ОСНОВНОЙ PIPELINE ==================
 
@@ -280,10 +345,11 @@ def scan(
     align: bool = True,
     # трим полей
     trim: bool = True,
-    trim_margin_px: int = 8,
+    trim_margin_px: int = 0,
     _trim_thr: float = 0.22,
     _trim_sustain: int = 6,
-    _trim_pad: int = 6,
+    _trim_pad: int = 12,
+    text_strength: float = 0.5,
 ) -> np.ndarray:
     """
     1) Цвет/шум нормализация
@@ -291,35 +357,23 @@ def scan(
     3) Трим по k-means (параметризован)
     4) Режимы вывода: bw | gray | color (+ enhancement)
     """
-    # 1) нормализация
-    img = _gray_world_wb(image_bgr)
-    img = cv2.fastNlMeansDenoisingColored(img, None, 3, 3, 7, 21)
-
-    H, W = img.shape[:2]
+    # Analyse a small copy; expensive denoising must not run on a full phone photo.
+    H, W = image_bgr.shape[:2]
     scale = 1300.0 / max(H, W)
-    small = cv2.resize(img, (int(W*scale), int(H*scale))) if scale < 1.0 else img.copy()
-    ratio = image_bgr.shape[0] / float(small.shape[0])
+    small = cv2.resize(image_bgr, (max(1, int(W*scale)), max(1, int(H*scale))),
+                       interpolation=cv2.INTER_AREA) if scale < 1.0 else image_bgr.copy()
 
     # 2) выравнивание (перспективное)
     doc = image_bgr.copy()
-    hed = HED(Path(__file__).resolve().parent.parent / "models" / "hed")
     if align:
-        quad, small_used = _find_doc_quad(small, hed if hed.available else None)
-        if quad is not None:
-            pts = quad.reshape(4,2) * ratio
+        pts, small = _detect_source_quad(image_bgr)
+        if pts is not None:
             doc = four_point_transform(
                 image_bgr, pts,
                 min_side=260,
                 target_long_side=target_long_side,
                 inter=cv2.INTER_CUBIC
             )
-        else:
-            # нет надёжного 4-угольника — просто бережно ресайзим
-            if target_long_side is not None:
-                h0, w0 = doc.shape[:2]
-                s = target_long_side / max(h0, w0)
-                if s > 1.0:
-                    doc = cv2.resize(doc, (int(w0*s), int(h0*s)), interpolation=cv2.INTER_CUBIC)
 
     # 3) трим по k-means
     if trim:
@@ -327,17 +381,33 @@ def scan(
             doc,
             margin_px=trim_margin_px,
             pad_px=_trim_pad,
-            max_shrink_ratio=0.25,
+            max_shrink_ratio=0.12,
             thr=float(_trim_thr),
             sustain=int(_trim_sustain),
         )
 
+    # Honour the requested size after trimming, including when alignment is off
+    # or no document contour was found.
+    if target_long_side is not None:
+        h, w = doc.shape[:2]
+        resize_scale = target_long_side / max(h, w)
+        if resize_scale != 1:
+            doc = cv2.resize(
+                doc, (max(1, round(w * resize_scale)), max(1, round(h * resize_scale))),
+                interpolation=cv2.INTER_AREA if resize_scale < 1 else cv2.INTER_CUBIC,
+            )
+
     # 4) улучшение читаемости
     if output_mode == "color":
-        out = _sharpen(doc, strength=0.35, radius=1.2)
+        if text_strength == 0:
+            out = doc.copy()
+        else:
+            lab = cv2.cvtColor(doc, cv2.COLOR_BGR2LAB)
+            lab[:, :, 0] = _text_enhance(lab[:, :, 0], strength=text_strength)
+            out = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
     else:
         g = cv2.cvtColor(doc, cv2.COLOR_BGR2GRAY)
-        g = _text_enhance(g)
+        g = _text_enhance(g, strength=text_strength)
         if output_mode == "gray":
             out = g
         else:

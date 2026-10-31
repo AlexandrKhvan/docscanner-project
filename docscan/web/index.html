@@ -28,6 +28,8 @@
     .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--stroke)}
     .btn.ghost{background:transparent;color:var(--muted)}
     .btn:disabled{opacity:.5;cursor:not-allowed}
+    .progress{height:6px;overflow:hidden;border-radius:999px;background:var(--stroke)}
+    .progress i{display:block;height:100%;width:0;background:var(--brand);transition:width .2s}
     .grid{display:grid;gap:16px}
     @media(min-width:900px){.grid{grid-template-columns:320px 1fr}}
     .panel{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;box-shadow:var(--shadow)}
@@ -65,33 +67,49 @@
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:2000}
     .modal.show{display:flex}
     .dlg{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;box-shadow:var(--shadow);width:min(96vw,1200px);height:min(92vh,820px);display:flex;flex-direction:column}
-    .dlg header{padding:12px 14px;border-bottom:1px solid var(--stroke);display:flex;align-items:center;justify-content:space-between}
-    .dlg main{flex:1;display:grid;grid-template-columns:1fr 320px}
-    .stage{position:relative;background:#000}
-    .canvas-wrap{position:absolute;inset:0;overflow:hidden;cursor:grab}
+    .dlg header{padding:12px 14px;border-bottom:1px solid var(--stroke);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .dlg main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 280px}
+    .stage{position:relative;background:#17202e;min-height:200px;overflow:hidden}
+    body.editor-open{overflow:hidden}
+    .canvas-wrap{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none}
+    .canvas-wrap.locked{pointer-events:none}
+    .canvas-wrap[data-tool="brush"]{cursor:crosshair}
     .canvas-wrap.drag{cursor:grabbing}
-    canvas#edCanvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:auto;background:#000}
+    canvas#edCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto;pointer-events:none}
     .overlay{position:absolute;inset:0;pointer-events:none}
-    .rect-box{position:absolute;border:2px solid #00b3ff;box-shadow:0 0 0 9999px rgba(0,0,0,.4);pointer-events:auto}
+    .rect-box{position:absolute;pointer-events:auto;cursor:move;touch-action:none}
     .handle{position:absolute;width:14px;height:14px;background:#00b3ff;border:2px solid #fff;border-radius:3px;transform:translate(-50%,-50%);cursor:nwse-resize}
     .handle.n{top:0;left:50%;cursor:ns-resize}
-    .handle.s{bottom:0;left:50%;cursor:ns-resize}
+    .handle.s{top:100%;left:50%;cursor:ns-resize}
     .handle.w{left:0;top:50%;cursor:ew-resize}
-    .handle.e{right:0;top:50%;cursor:ew-resize}
+    .handle.e{left:100%;top:50%;cursor:ew-resize}
     .handle.nw{top:0;left:0}
-    .handle.ne{top:0;right:0;cursor:nesw-resize}
-    .handle.sw{bottom:0;left:0;cursor:nesw-resize}
-    .handle.se{bottom:0;right:0}
+    .handle.ne{top:0;left:100%;cursor:nesw-resize}
+    .handle.sw{top:100%;left:0;cursor:nesw-resize}
+    .handle.se{top:100%;left:100%}
     .quad{position:absolute;inset:0;pointer-events:none}
     .quad .pt{position:absolute;width:14px;height:14px;background:#22d3ee;border:2px solid #fff;border-radius:999px;transform:translate(-50%,-50%);pointer-events:auto;cursor:move}
     .quad .edge{position:absolute;border:2px dashed rgba(34,211,238,.9);pointer-events:none}
     .tools .chip{cursor:pointer}
     .tools .chip.active{outline:2px solid var(--brand)}
-    .sidebar{border-left:1px solid var(--stroke);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+    .sidebar{border-left:1px solid var(--stroke);padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
     .sidebar .row{justify-content:space-between}
     .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;background:var(--chip);border:1px solid var(--stroke);padding:2px 6px;border-radius:6px;font-size:12px;color:var(--muted)}
-    .brushHud{position:absolute;left:16px;top:16px;background:rgba(0,0,0,.4);color:#fff;padding:6px 10px;border-radius:10px;font-size:12px}
-    .pager{display:flex;gap:8px;align-items:center}
+    .brushHud{position:absolute;left:16px;top:16px;background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:10px;font-size:12px;pointer-events:none}
+    .pager{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .editor-status{padding:9px 14px;border-top:1px solid var(--stroke);font-size:13px;min-height:38px}
+    .edit-preview{border:1px solid var(--stroke);border-radius:12px;padding:10px;background:var(--card)}
+    .edit-preview img{width:100%;max-height:230px;object-fit:contain;background:#d9dee7;display:block;margin:8px 0}
+    .edit-preview img.hidden{display:none}
+    .edit-preview img.stale{opacity:.4}
+    .edit-preview .subtle{font-size:12px}
+    @media(max-width:760px){
+      .dlg{height:96dvh;width:98vw}
+      .dlg main{grid-template-columns:1fr;grid-template-rows:minmax(200px,1fr) auto}
+      .sidebar{border-left:0;border-top:1px solid var(--stroke);max-height:220px}
+      .dlg header .subtle{display:none}
+      .pager .btn{padding:8px 10px;font-size:12px}
+    }
   </style>
 </head>
 <body>
@@ -103,7 +121,7 @@
       </div>
       <div class="toolbar">
         <button class="btn secondary" id="themeBtn">Тема: светлая</button>
-        <a class="btn ghost" href="#" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn ghost" href="https://github.com/AlexandrKhvan/docscanner-project" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
 
@@ -137,6 +155,11 @@
               <label>Длинная сторона (px)</label>
               <input id="longSide" type="number" min="600" max="6000" step="100" value="2400">
             </div>
+            <div class="control" style="flex:1 100%">
+              <label for="textStrength">Чёткость текста: <span id="textStrengthVal">50%</span></label>
+              <input id="textStrength" type="range" min="0" max="100" step="5" value="50">
+              <div class="subtle" style="font-size:12px">Контраст и резкость букв. 0 — выключено. Результат можно сравнить в предпросмотре.</div>
+            </div>
             <div class="control">
               <label>Формат</label>
               <div class="seg" id="fmtSeg">
@@ -150,13 +173,14 @@
             <label class="switch"><input type="checkbox" id="align" checked> Выровнять (перспектива)</label>
             <label class="switch"><input type="checkbox" id="trim" checked> Обрезать поля (trim)</label>
           </div>
+          <div class="subtle" style="font-size:12px;margin-top:8px">Для файлов с применёнными ручными правками автоматическое выравнивание и обрезка отключаются.</div>
         </div>
 
         <div class="section" id="trimSection">
           <div class="row">
             <div class="control">
               <label>Внутренний отступ (px)</label>
-              <input id="trimMargin" type="number" min="0" max="40" step="1" value="8">
+              <input id="trimMargin" type="number" min="0" max="40" step="1" value="0">
             </div>
             <div class="control">
               <label>Жёсткость трима: <span id="trimThrVal">0.22</span></label>
@@ -167,8 +191,8 @@
               <input id="trimSustain" type="range" min="3" max="40" step="1" value="6">
             </div>
             <div class="control">
-              <label>Внешний пад (px): <span id="trimPadVal">6</span></label>
-              <input id="trimPad" type="range" min="0" max="40" step="1" value="6">
+              <label>Запас снаружи (px): <span id="trimPadVal">12</span></label>
+              <input id="trimPad" type="range" min="0" max="40" step="1" value="12">
             </div>
           </div>
 
@@ -195,27 +219,29 @@
       <!-- RIGHT: Preview -->
       <div class="panel preview">
         <h3 style="margin:6px 0 12px">Предпросмотр</h3>
+        <button class="btn secondary" id="btnPreview">Посмотреть и поправить автообрезку</button>
+        <p class="subtle" style="font-size:13px">Проверьте найденные границы на исходном фото. В редакторе можно вернуть поля и увидеть результат до сохранения.</p>
         <img id="preview" alt="preview" class="hidden">
         <div id="downloads" class="actions" style="margin-top:12px"></div>
-        <div class="footer">Поддерживаются PNG/JPG/PDF. При пакетной обработке используются ваши правки по каждому файлу.</div>
+        <div class="footer">Загрузите изображения до 20 МБ и 40 Мп, не более 20 за раз. Результат можно скачать как PNG, JPG, PDF или ZIP. При пакетной обработке используются ваши правки по каждому файлу.</div>
       </div>
     </div>
   </div>
 
   <!-- ===== Modal: Editor (Rect/Perspective/Brush/Rotate) ===== -->
   <div class="modal" id="edModal" aria-hidden="true">
-    <div class="dlg" role="dialog" aria-modal="true">
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
       <header>
         <div style="display:flex;align-items:center;gap:10px">
-          <strong>Редактор</strong>
-          <span class="subtle">Колёсико — масштаб, перетаскивание — панорамирование</span>
+          <strong id="editorTitle">Редактор</strong>
+          <span class="subtle">Колёсико — масштаб · Пробел + перетаскивание — перемещение</span>
         </div>
         <div class="pager">
           <button class="btn secondary" id="prevBtn">⟨ Пред</button>
           <div class="chip" id="pageInfo">1 / 1</div>
           <button class="btn secondary" id="nextBtn">След ⟩</button>
           <button class="btn secondary" id="fitBtn">Вписать</button>
-          <button class="btn secondary" id="cancelBtn">Отмена (Esc)</button>
+          <button class="btn secondary" id="cancelBtn">Закрыть (Esc)</button>
           <button class="btn" id="applyBtn">Применить (Enter)</button>
         </div>
       </header>
@@ -251,12 +277,27 @@
           </div>
         </div>
         <aside class="sidebar">
+          <div class="edit-preview">
+            <strong>Результат обрезки</strong>
+            <img id="editPreview" class="hidden" alt="Предпросмотр выбранной области с обработкой текста">
+            <div class="subtle" id="editPreviewStatus" role="status" aria-live="polite"></div>
+            <a id="previewFull" class="hidden" target="_blank" rel="noopener">Открыть в полном размере</a>
+            <button type="button" class="btn secondary" id="refreshPreview" style="margin-top:8px">Обновить предпросмотр</button>
+            <label for="previewMode" style="display:block;margin-top:10px">Режим результата</label>
+            <select id="previewMode"><option value="bw">Ч/Б</option><option value="gray">Серый</option><option value="color">Цвет</option></select>
+            <label for="editorTextStrength" style="display:block;margin-top:10px">Чёткость текста: <span id="editorTextStrengthVal">50%</span></label>
+            <input id="editorTextStrength" type="range" min="0" max="100" step="5" value="50">
+            <div class="subtle">Режим и чёткость также применятся к итоговому скану.</div>
+          </div>
+          <button class="btn secondary" id="autoCrop">Найти границы автоматически</button>
+          <button class="btn secondary" id="expandCrop">Больше полей</button>
           <div class="row">
             <div class="tools seg" id="toolSeg">
-              <span class="chip" data-tool="rect">Rect</span>
-              <span class="chip" data-tool="persp">Perspective</span>
-              <span class="chip" data-tool="brush">Brush</span>
-              <span class="chip" data-tool="rotate">Rotate</span>
+              <button type="button" class="chip" data-tool="pan">Перемещение</button>
+              <button type="button" class="chip" data-tool="rect">Обрезка</button>
+              <button type="button" class="chip" data-tool="persp">Четыре угла</button>
+              <button type="button" class="chip" data-tool="brush">Кисть</button>
+              <button type="button" class="chip" data-tool="rotate">Поворот</button>
             </div>
           </div>
 
@@ -274,16 +315,16 @@
           </div>
 
           <div id="perspPanel" class="hidden">
-            <div class="subtle">Перемещайте 4 точки по углам листа. Перспективный варп применяется при «Применить».</div>
-            <div class="row" style="margin-top:6px"><button class="btn secondary" id="resetQuad">Сбросить квад</button></div>
+            <div class="subtle">Поставьте точки по углам листа. При применении лист выпрямится. Пересекать стороны нельзя.</div>
+            <div class="row" style="margin-top:6px"><button class="btn secondary" id="resetQuad">Углы исходного фото</button></div>
           </div>
 
           <div id="brushPanel" class="hidden">
             <div class="row">
-              <label>Толщина кисти</label>
+              <label for="brushSize">Диаметр кисти в пикселях фото</label>
               <input id="brushSize" type="range" min="8" max="120" step="1" value="32">
             </div>
-            <div class="subtle">ЛКМ — добавить маску (прозрачным станет то, что закрасите), ПКМ — стереть маску.</div>
+            <div class="subtle">Закрашенные участки станут белыми. ПКМ или Alt + перетаскивание — стереть маску.</div>
             <div class="row" style="margin-top:6px">
               <button class="btn secondary" id="clearMask">Очистить маску</button>
             </div>
@@ -302,13 +343,19 @@
               <button class="btn secondary" id="rotReset">Сброс</button>
             </div>
           </div>
+          <button class="btn secondary" id="resetSelection">Убрать выделение</button>
+          <button class="btn secondary" id="resetFile">Вернуть исходное фото</button>
+          <div class="subtle" style="font-size:12px">Черновики сохраняются при переходе между страницами и закрытии окна. Нажмите «Применить», чтобы включить правки в результат.</div>
         </aside>
       </main>
+      <div class="editor-status" id="editorStatus" role="status" aria-live="polite"></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
+  <script src="/static/editor-geometry.js"></script>
+  <script src="/static/editor.js"></script>
   <script>
     // ====== THEME
     const themeBtn = document.getElementById('themeBtn');
@@ -336,11 +383,46 @@
     const btnPdf = document.getElementById('btnPdf');
     const btnZip = document.getElementById('btnZip');
     const btnEdit = document.getElementById('btnEdit');
+    const btnPreview = document.getElementById('btnPreview');
+    const textStrength = document.getElementById('textStrength');
+    const textStrengthVal = document.getElementById('textStrengthVal');
     const hint = document.getElementById('hint');
     const bar = document.getElementById('bar');
     const preview = document.getElementById('preview');
     const downloads = document.getElementById('downloads');
     const toast = document.getElementById('toast');
+    let busy = false;
+    let editor;
+    let resultUrl = null;
+    const thumbUrls = [];
+    let acceptedFiles = [];
+
+    function clearResult(){
+      preview.removeAttribute('src');
+      preview.classList.add('hidden');
+      downloads.innerHTML = '';
+      if (resultUrl){ URL.revokeObjectURL(resultUrl); resultUrl = null; }
+    }
+
+    function updateButtons(){
+      const n = fileInp.files.length;
+      btnOne.disabled = busy || n !== 1;
+      btnPdf.disabled = busy || n < 2;
+      btnZip.disabled = busy || n < 2;
+      btnEdit.disabled = busy || n < 1;
+      btnPreview.disabled = busy || n < 1;
+      fileInp.disabled = busy;
+      thumbs.style.pointerEvents = busy ? 'none' : '';
+    }
+
+    function setBusy(value){ busy = value; updateButtons(); }
+
+    async function responseError(res){
+      const body = await res.json().catch(()=>null);
+      if (typeof body?.detail === 'string') return body.detail;
+      if (Array.isArray(body?.detail)) return body.detail.map(e=>`${e.loc.at(-1)}: ${e.msg}`).join('; ');
+      return body?.error || `Ошибка сервера (${res.status})`;
+    }
 
     // segmented
     function initSeg(seg, def){
@@ -361,13 +443,26 @@
       const files = [...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
       if (files.length){ setFiles(files); }
     });
-    drop.addEventListener('click', ()=>fileInp.click());
+    drop.addEventListener('click', e=>{
+      if (!busy && e.target !== fileInp && !e.target.closest('label')) fileInp.click();
+    });
     fileInp.addEventListener('change', ()=> setFiles([...fileInp.files]));
 
     function setFiles(files){
+      if (busy) return;
+      const error = files.length > 20 ? 'Выберите не более 20 изображений'
+        : files.some(f=>f.size > 20*1024*1024) ? 'Размер каждого изображения должен быть не больше 20 МБ' : null;
+      if (error){
+        const previous = new DataTransfer();
+        acceptedFiles.forEach(f=>previous.items.add(f));
+        fileInp.files = previous.files;
+        toastMsg(error, false); return;
+      }
       const dt = new DataTransfer();
       files.forEach(f=>dt.items.add(f));
       fileInp.files = dt.files;
+      acceptedFiles = files;
+      editor.clear();
       edited.clear(); // сбрасываем все кастомные правки при новой загрузке
       renderThumbs();
       onChanged();
@@ -378,13 +473,16 @@
     const edited = new Map();
 
     async function renderThumbs(){
+      thumbUrls.splice(0).forEach(url=>URL.revokeObjectURL(url));
       thumbs.innerHTML = '';
       const files = [...fileInp.files];
       const n = files.length;
       hint.textContent = n ? `Выбрано файлов: ${n}` : 'Файлы не выбраны';
       files.forEach((f, i)=>{
-        const url = URL.createObjectURL(f);
-        const el = document.createElement('div'); el.className='thumb';
+        const url = URL.createObjectURL(edited.get(i) || f);
+        thumbUrls.push(url);
+        const el = document.createElement('button'); el.type='button'; el.className='thumb';
+        el.setAttribute('aria-label', `Редактировать: ${f.name}`);
         const img = document.createElement('img'); img.src = url;
         const nm = document.createElement('div'); nm.className='name'; nm.textContent = f.name;
         el.appendChild(img); el.appendChild(nm);
@@ -398,13 +496,9 @@
     }
 
     function onChanged(){
-      const n = fileInp.files.length;
-      btnOne.disabled = !(n===1);
-      btnPdf.disabled = !(n>=2);
-      btnZip.disabled  = !(n>=2);
-      btnEdit.disabled = !(n>=1);
-      downloads.innerHTML = '';
-      preview.classList.add('hidden');
+      updateButtons();
+      clearResult();
+      editor?.refreshOptions();
     }
 
     function updateTrimUI(){
@@ -419,6 +513,9 @@
     bind(trimThr, trimThrVal, v=>Number(v).toFixed(2));
     bind(trimSustain, trimSustainVal);
     bind(trimPad, trimPadVal);
+    bind(textStrength, textStrengthVal, value=>value+'%');
+    textStrength.addEventListener('input', onChanged);
+    [longSide,align,trim,trimMargin,trimThr,trimSustain,trimPad].forEach(input=>input.addEventListener('change', onChanged));
 
     document.querySelectorAll('.preset').forEach(p=>{
       p.onclick=()=>{
@@ -447,9 +544,10 @@
       p.set('mode', mode.value);
       p.set('long_side', String(Number(longSide.value)||2400));
       p.set('fmt', fmt.value);
+      p.set('text_strength', String(Number(textStrength.value)/100));
       p.set('align', String(align.checked));
       p.set('trim', String(trim.checked));
-      p.set('trim_margin', String(Number(trimMargin.value)||8));
+      p.set('trim_margin', trimMargin.value === '' ? '0' : trimMargin.value);
       if (trim.checked){
         p.set('trim_thr', String(Number(trimThr.value)));
         p.set('trim_sustain', String(Number(trimSustain.value)));
@@ -458,454 +556,23 @@
       return base + '?' + p.toString();
     }
 
-    // ====== EDITOR (multi-file) ======
-    const edModal = document.getElementById('edModal');
-    const canvas = document.getElementById('edCanvas');
-    const wrap = document.getElementById('wrap');
-    const rectUi = document.getElementById('rectUi');
-    const rectBox = document.getElementById('rectBox');
-    const quadUi = document.getElementById('quadUi');
-    const qpts = [document.getElementById('q0'),document.getElementById('q1'),document.getElementById('q2'),document.getElementById('q3')];
-    const brushHud = document.getElementById('brushHud');
-    const brushSize = document.getElementById('brushSize');
-    const brushSizeLbl = document.getElementById('brushSizeLbl');
-    const clearMaskBtn = document.getElementById('clearMask');
-    const toolSeg = document.getElementById('toolSeg');
-    const aspectSel = document.getElementById('aspectSel');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const pageInfo = document.getElementById('pageInfo');
-    const fitBtn = document.getElementById('fitBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const applyBtn = document.getElementById('applyBtn');
-    const rotL = document.getElementById('rotL');
-    const rotR = document.getElementById('rotR');
-    const rotM1 = document.getElementById('rotM1');
-    const rotP1 = document.getElementById('rotP1');
-    const rotReset = document.getElementById('rotReset');
-
-    let curIndex = 0;
-    let img = new Image();
-    let imgW=0, imgH=0;
-    let scale=1, minScale=0.1, maxScale=8;
-    let offsetX=0, offsetY=0;
-    let isPanning=false, panStart={x:0,y:0}, offsetStart={x:0,y:0};
-    let aspect = 'free';
-    let tool = 'rect'; // rect | persp | brush | rotate
-    let draggingRect = null; // 'move', 'nw','n','ne','e','se','s','sw','w'
-    let rect = { x:0.1, y:0.1, w:0.8, h:0.8 }; // normalized to canvas
-    let quad = [ {x:0.2,y:0.2}, {x:0.8,y:0.2}, {x:0.8,y:0.8}, {x:0.2,y:0.8} ]; // normalized
-    let draggingPt = -1;
-    let rotateDeg = 0; // accumulated degrees
-    let maskCanvas = document.createElement('canvas'); // same size as image, world coords
-    let maskCtx = maskCanvas.getContext('2d');
-    let isBrushing = false;
-    let erasing = false;
-
-    function selectTool(t){
-      tool = t;
-      [...toolSeg.querySelectorAll('.chip')].forEach(c=>c.classList.toggle('active', c.dataset.tool===t));
-      rectUi.style.display = (t==='rect') ? 'block' : 'none';
-      quadUi.style.display = (t==='persp') ? 'block' : 'none';
-      document.getElementById('rectPanel').classList.toggle('hidden', t!=='rect');
-      document.getElementById('perspPanel').classList.toggle('hidden', t!=='persp');
-      document.getElementById('brushPanel').classList.toggle('hidden', t!=='brush');
-      document.getElementById('rotatePanel').classList.toggle('hidden', t!=='rotate');
-      brushHud.classList.toggle('hidden', t!=='brush');
-      draw();
-    }
-    ;(()=>{ // init tool seg
-      const chips=[...toolSeg.querySelectorAll('.chip')];
-      chips.forEach(c=>c.onclick=()=>selectTool(c.dataset.tool));
-      selectTool('rect');
-    })();
-
-    brushSize.addEventListener('input', ()=> brushSizeLbl.textContent = brushSize.value);
-    brushSize.dispatchEvent(new Event('input'));
-
-    function openEditor(startIndex=0){
-      if (![...fileInp.files].length){ return; }
-      curIndex = Math.min(Math.max(0, startIndex), fileInp.files.length-1);
-      loadCurrent();
-      edModal.classList.add('show');
-    }
+    // Geometry and pointer handling live in the editor modules.
+    editor = new DocScanEditor({
+      getFiles: ()=>[...fileInp.files],
+      getEdited: index=>edited.get(index),
+      onSave: (index, file)=>{ edited.set(index, file); renderThumbs(); onChanged(); },
+      onReset: index=>{ edited.delete(index); renderThumbs(); onChanged(); },
+      onError: message=>toastMsg(message, false),
+      errorMessage: responseError,
+      getOptions: ()=>({mode:mode.value,long_side:Number(longSide.value)||2400,text_strength:Number(textStrength.value)/100,
+        align:align.checked,trim:trim.checked,trim_margin:Number(trimMargin.value)||0,
+        trim_thr:Number(trimThr.value),trim_sustain:Number(trimSustain.value),trim_pad:Number(trimPad.value)}),
+      onTextStrength: value=>{textStrength.value=Math.round(value*100);textStrength.dispatchEvent(new Event('input'));},
+      onMode: value=>mode.set(value),
+    });
+    function openEditor(index=0, auto=false){ if (!busy) return editor.open(index,{auto}); }
     btnEdit.onclick = ()=>openEditor(0);
-
-    function closeEditor(){ edModal.classList.remove('show'); }
-
-    function fit(){
-      const cw = wrap.clientWidth, ch = wrap.clientHeight;
-      canvas.width = cw; canvas.height = ch;
-      const sx = cw / imgW, sy = ch / imgH;
-      scale = Math.min(sx, sy);
-      minScale = Math.min(scale*0.3, scale);
-      maxScale = Math.max(6, scale*4);
-      offsetX = (cw - imgW*scale)/2;
-      offsetY = (ch - imgH*scale)/2;
-      // reset UI elems to centered
-      rect = { x:0.1, y:0.1, w:0.8, h:0.8 };
-      quad = [ {x:0.2,y:0.2}, {x:0.8,y:0.2}, {x:0.8,y:0.8}, {x:0.2,y:0.8} ];
-      updateQuadUi();
-      draw();
-    }
-
-    function loadCurrent(){
-      const files = [...fileInp.files];
-      const f = edited.get(curIndex) || files[curIndex];
-      img = new Image();
-      img.onload = ()=>{
-        imgW = img.width; imgH = img.height;
-        maskCanvas.width = imgW; maskCanvas.height = imgH;
-        maskCtx = maskCanvas.getContext('2d');
-        maskCtx.clearRect(0,0,maskCanvas.width, maskCanvas.height);
-        rotateDeg = 0;
-        fit();
-        updatePager();
-      };
-      img.src = URL.createObjectURL(f);
-    }
-
-    function updatePager(){
-      const n = fileInp.files.length;
-      pageInfo.textContent = `${curIndex+1} / ${n}`;
-      prevBtn.disabled = curIndex===0;
-      nextBtn.disabled = curIndex===n-1;
-    }
-
-    prevBtn.onclick = ()=>{ if (curIndex>0){ curIndex--; loadCurrent(); } };
-    nextBtn.onclick = ()=>{ const n=fileInp.files.length; if (curIndex<n-1){ curIndex++; loadCurrent(); } };
-
-    fitBtn.onclick = ()=>{ fit(); };
-    cancelBtn.onclick = ()=> closeEditor();
-    window.addEventListener('keydown', (e)=>{
-      if (!edModal.classList.contains('show')) return;
-      if (e.key==='Escape') closeEditor();
-      if (e.key==='Enter') applyEdits();
-      if (e.key==='ArrowLeft' && !e.shiftKey) prevBtn.click();
-      if (e.key==='ArrowRight'&& !e.shiftKey) nextBtn.click();
-    });
-    applyBtn.onclick = ()=> applyEdits();
-
-    // pan/zoom
-    wrap.addEventListener('wheel', (e)=>{
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 1.1 : 0.9;
-      const mx = e.offsetX, my = e.offsetY;
-      const before = screenToWorld(mx, my);
-      scale = Math.max(minScale, Math.min(maxScale, scale*delta));
-      const after = worldToScreen(before.x, before.y);
-      offsetX += (mx - after.x);
-      offsetY += (my - after.y);
-      draw();
-    }, {passive:false});
-    wrap.addEventListener('mousedown', (e)=>{
-      if (tool==='brush'){
-        isBrushing = true; erasing = (e.button===2);
-        brushStroke(e);
-        return;
-      }
-      if (tool==='rect'){
-        const handle = e.target.classList.contains('handle') ? e.target : (e.target.id==='rectBox' ? 'move' : null);
-        if (handle){
-          draggingRect = handle==='move' ? 'move' : (handle.classList[1]||handle.classList[0]);
-          rectDragStart = { mx:e.clientX, my:e.clientY, rect: {...rect} };
-          return;
-        }
-      }
-      if (tool==='persp'){
-        const idx = qpts.findIndex(pt=>pt===e.target);
-        if (idx>=0){ draggingPt = idx; return; }
-      }
-      isPanning = true; wrap.classList.add('drag');
-      panStart = { x:e.clientX, y:e.clientY }; offsetStart = { x:offsetX, y:offsetY };
-    });
-    window.addEventListener('mousemove', (e)=>{
-      if (isPanning){ offsetX = offsetStart.x + (e.clientX - panStart.x); offsetY = offsetStart.y + (e.clientY - panStart.y); draw(); return; }
-      if (tool==='rect' && draggingRect){
-        const dx = (e.clientX - rectDragStart.mx)/canvas.width;
-        const dy = (e.clientY - rectDragStart.my)/canvas.height;
-        let {x,y,w,h} = rectDragStart.rect;
-        const keepAspect = ()=>{
-          if (aspect==='free') return;
-          const want = (aspect==='A4') ? (210/297) : (Number(aspect.split(':')[0])/Number(aspect.split(':')[1]));
-          const cur = w/h;
-          if (cur>want){ w = h*want; } else { h = w/want; }
-        };
-        switch(draggingRect){
-          case 'move': x+=dx; y+=dy; break;
-          case 'nw': x+=dx; y+=dy; w-=dx; h-=dy; break;
-          case 'ne': y+=dy; w+=dx; h-=dy; break;
-          case 'sw': x+=dx; w-=dx; h+=dy; break;
-          case 'se': w+=dx; h+=dy; break;
-          case 'n': y+=dy; h-=dy; break;
-          case 's': h+=dy; break;
-          case 'w': x+=dx; w-=dx; break;
-          case 'e': w+=dx; break;
-        }
-        rect = {x,y,w,h}; clampRect(); if (aspect!=='free') enforceAspect(); draw(); return;
-      }
-      if (tool==='persp' && draggingPt>=0){
-        // move point
-        const nx = Math.max(0, Math.min(1, e.offsetX / canvas.width));
-        const ny = Math.max(0, Math.min(1, e.offsetY / canvas.height));
-        quad[draggingPt] = {x:nx, y:ny};
-        updateQuadUi(); draw(); return;
-      }
-      if (isBrushing){
-        brushStroke(e);
-      }
-    });
-    window.addEventListener('mouseup', ()=>{
-      isPanning=false; wrap.classList.remove('drag');
-      draggingRect = null; draggingPt = -1; isBrushing = false;
-    });
-    wrap.addEventListener('contextmenu', e=>{ if (tool==='brush'){ e.preventDefault(); } });
-
-    function worldToScreen(wx, wy){ return { x: wx*scale + offsetX, y: wy*scale + offsetY }; }
-    function screenToWorld(sx, sy){ return { x: (sx - offsetX)/scale, y: (sy - offsetY)/scale }; }
-
-    // Rect helpers
-    function getRectPx(){ return { x: rect.x*canvas.width, y: rect.y*canvas.height, w: rect.w*canvas.width, h: rect.h*canvas.height }; }
-    function clampRect(){
-      rect.x = Math.max(0, Math.min(1-rect.w, rect.x));
-      rect.y = Math.max(0, Math.min(1-rect.h, rect.y));
-      rect.w = Math.max(0.02, Math.min(1-rect.x, rect.w));
-      rect.h = Math.max(0.02, Math.min(1-rect.y, rect.h));
-    }
-    function enforceAspect(){
-      if (aspect==='free') return;
-      const want = (aspect==='A4') ? (210/297) : (Number(aspect.split(':')[0])/Number(aspect.split(':')[1]));
-      const rp = getRectPx();
-      let w = rp.w, h = rp.h;
-      if (w/h > want) w = h*want; else h = w/want;
-      let x = rp.x + (rp.w - w)/2, y = rp.y + (rp.h - h)/2;
-      x = Math.max(0, Math.min(canvas.width - w, x));
-      y = Math.max(0, Math.min(canvas.height - h, y));
-      rect = { x:x/canvas.width, y:y/canvas.height, w:w/canvas.width, h:h/canvas.height };
-      renderRectUi();
-    }
-    function renderRectUi(){
-      const rp = getRectPx();
-      rectBox.style.left = rp.x+'px'; rectBox.style.top = rp.y+'px';
-      rectBox.style.width = rp.w+'px'; rectBox.style.height = rp.h+'px';
-    }
-    let rectDragStart = null;
-
-    // Quad UI
-    function updateQuadUi(){
-      const pts = quad.map(p=>({ x:p.x*canvas.width, y:p.y*canvas.height }));
-      qpts.forEach((el,i)=>{ el.style.left = pts[i].x+'px'; el.style.top = pts[i].y+'px'; });
-    }
-
-    // Brush
-    function brushStroke(e){
-      const {x, y} = screenToWorld(e.offsetX, e.offsetY);
-      maskCtx.save();
-      maskCtx.globalCompositeOperation = erasing ? 'destination-out' : 'source-over';
-      maskCtx.fillStyle = 'rgba(0,0,0,1)'; // маска: чёрным — вырезать
-      maskCtx.beginPath();
-      maskCtx.arc(x, y, Number(brushSize.value), 0, Math.PI*2);
-      maskCtx.fill();
-      maskCtx.restore();
-      draw();
-    }
-    clearMaskBtn.onclick = ()=>{ maskCtx.clearRect(0,0,maskCanvas.width, maskCanvas.height); draw(); };
-
-    // Rotate
-    rotL.onclick = ()=>{ rotateDeg -= 90; draw(); };
-    rotR.onclick = ()=>{ rotateDeg += 90; draw(); };
-    rotM1.onclick = ()=>{ rotateDeg -= 1; draw(); };
-    rotP1.onclick = ()=>{ rotateDeg += 1; draw(); };
-    rotReset.onclick = ()=>{ rotateDeg = 0; draw(); };
-
-    // Aspect
-    aspectSel.addEventListener('change', ()=>{ aspect = aspectSel.value; if (aspect!=='free') enforceAspect(); draw(); });
-
-    // draw scene
-    function draw(){
-      const ctx = canvas.getContext('2d');
-      ctx.save(); ctx.clearRect(0,0,canvas.width, canvas.height);
-      ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width, canvas.height);
-
-      // image with rotate/transform
-      ctx.translate(offsetX + imgW*scale/2, offsetY + imgH*scale/2);
-      ctx.rotate(rotateDeg * Math.PI/180);
-      ctx.scale(scale, scale);
-      ctx.translate(-imgW/2, -imgH/2);
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(img, 0, 0);
-
-      // apply mask preview: dim where masked
-      ctx.globalAlpha = 0.35;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(maskCanvas, 0,0);
-      ctx.globalAlpha = 1.0;
-
-      ctx.restore();
-
-      renderRectUi();
-    }
-
-    // perspective warp util: piecewise affine grid
-    // Warp quad->rect of size (tw,th)
-    function warpQuadToRect(srcImg, srcQuad, tw, th){
-      const off = document.createElement('canvas');
-      off.width = tw; off.height = th;
-      const octx = off.getContext('2d', { willReadFrequently:true });
-
-      // create grid on target, map back to source
-      const steps = 32; // higher -> better
-      for (let yi=0; yi<steps; yi++){
-        for (let xi=0; xi<steps; xi++){
-          const x0 = xi/steps, y0 = yi/steps;
-          const x1 = (xi+1)/steps, y1 = (yi+1)/steps;
-          const p00 = interpQuad(srcQuad, x0, y0);
-          const p10 = interpQuad(srcQuad, x1, y0);
-          const p01 = interpQuad(srcQuad, x0, y1);
-          const p11 = interpQuad(srcQuad, x1, y1);
-
-          // two triangles: (p00,p10,p11) and (p00,p11,p01)
-          drawTexturedTri(octx, srcImg, p00, p10, p11, x0*tw, y0*th, x1*tw, y1*th);
-          drawTexturedTri(octx, srcImg, p00, p11, p01, x0*tw, y0*th, x1*tw, y1*th);
-        }
-      }
-      return off;
-    }
-    // bilinear interpolation inside quad
-    function interpQuad(q, u, v){
-      // q: [tl, tr, br, bl] in WORLD coords (image space)
-      const tl=q[0], tr=q[1], br=q[2], bl=q[3];
-      const x = (1-u)*(1-v)*tl.x + u*(1-v)*tr.x + u*v*br.x + (1-u)*v*bl.x;
-      const y = (1-u)*(1-v)*tl.y + u*(1-v)*tr.y + u*v*br.y + (1-u)*v*bl.y;
-      return {x,y};
-    }
-    function drawTexturedTri(ctx, img, p0, p1, p2, tx0, ty0, tx1, ty1){
-      // map src triangle (p0,p1,p2) -> target triangle in [tx0..tx1]x[ty0..ty1] space
-      // compute affine transform using basis mapping
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(tx0, ty0);
-      ctx.lineTo(tx1, ty0);
-      ctx.lineTo(tx1, ty1);
-      ctx.lineTo(tx0, ty1);
-      ctx.closePath();
-      ctx.clip();
-
-      // solve transform for this cell using setTransform with coefficients by approximation:
-      // We approximate by mapping bounding quad cell with 2 draws; here we use drawImage with proper clipping.
-      // To keep it simple, draw the whole img, but pre-transform so this cell matches.
-      // Compute transform that maps unit square [0..1]^2 to triangle p0 p1 p2; then adjust to target cell.
-      // For simplicity in 2D canvas, we sample a small patch:
-      // (To keep code short and reliable, fallback: drawImage and rely on dense grid for quality.)
-      // We'll draw a small patch from the source via drawImage with sx,sy,sw,sh approximating the triangle bbox.
-
-      const minx = Math.min(p0.x,p1.x,p2.x), maxx=Math.max(p0.x,p1.x,p2.x);
-      const miny = Math.min(p0.y,p1.y,p2.y), maxy=Math.max(p0.y,p1.y,p2.y);
-      const sw = Math.max(1, (maxx-minx)); const sh = Math.max(1, (maxy-miny));
-      // Rough mapping: place this patch into the target cell sub-rect
-      ctx.drawImage(img, minx, miny, sw, sh, tx0, ty0, (tx1-tx0), (ty1-ty0));
-      ctx.restore();
-    }
-
-    // Apply edits -> produce PNG blob and store in edited Map
-    async function applyEdits(){
-      // 1) Bake rotate to source-size canvas
-      const base = document.createElement('canvas');
-      // compute rotated bbox
-      const rad = rotateDeg * Math.PI/180;
-      const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
-      const rw = Math.floor(imgW*cos + imgH*sin);
-      const rh = Math.floor(imgW*sin + imgH*cos);
-      base.width = rw; base.height = rh;
-      const bctx = base.getContext('2d');
-      bctx.translate(rw/2, rh/2);
-      bctx.rotate(rad);
-      bctx.drawImage(img, -imgW/2, -imgH/2);
-
-      // 2) Apply mask (erase masked zones)
-      if (maskCanvas.width && (maskCtx.getImageData(0,0,1,1) || true)){
-        // rotate mask as well
-        const mrot = document.createElement('canvas');
-        mrot.width = rw; mrot.height = rh;
-        const mctx = mrot.getContext('2d');
-        mctx.translate(rw/2, rh/2);
-        mctx.rotate(rad);
-        mctx.drawImage(maskCanvas, -imgW/2, -imgH/2);
-
-        bctx.save();
-        bctx.globalCompositeOperation = 'destination-out';
-        bctx.drawImage(mrot, 0, 0);
-        bctx.restore();
-      }
-
-      // 3) Rect crop in canvas space -> map to image coords via inverse of view
-      // We use rect in canvas normalized coords => convert to image space after rotation:
-      const rp = getRectPx();
-      // transform rect corners from screen to world (pre-rotate space), then to rotated image space
-      function screenToRotatedImage(sx, sy){
-        // canvas -> un-translate to scene
-        // invert drawing pipeline used in draw(): screen->(offset / scale / rotate) world
-        // compute world coords before rotation:
-        const world = screenToWorld(sx, sy); // in pre-rot image coords
-        // Now rotate the point by +rotateDeg to match rotated image canvas base
-        const cx = imgW/2, cy = imgH/2;
-        const dx = world.x - cx, dy = world.y - cy;
-        const x =  Math.cos(rad)*dx - Math.sin(rad)*dy + cx;
-        const y =  Math.sin(rad)*dx + Math.cos(rad)*dy + cy;
-        // shift to rotated bbox coords
-        const bx = x + (base.width - imgW)/2;
-        const by = y + (base.height - imgH)/2;
-        return {x:bx, y:by};
-      }
-      const pA = screenToRotatedImage(rp.x, rp.y);
-      const pB = screenToRotatedImage(rp.x+rp.w, rp.y+rp.h);
-      let rx = Math.floor(Math.max(0, Math.min(base.width-1, Math.min(pA.x, pB.x))));
-      let ry = Math.floor(Math.max(0, Math.min(base.height-1, Math.min(pA.y, pB.y))));
-      let rw2 = Math.floor(Math.min(base.width-rx, Math.abs(pB.x - pA.x)));
-      let rh2 = Math.floor(Math.min(base.height-ry, Math.abs(pB.y - pA.y)));
-      if (rw2 < 10 || rh2 < 10){ toastMsg('Слишком маленькая область (Rect)', false); return; }
-      const rectCropped = document.createElement('canvas');
-      rectCropped.width = rw2; rectCropped.height = rh2;
-      rectCropped.getContext('2d').drawImage(base, rx, ry, rw2, rh2, 0, 0, rw2, rh2);
-
-      // 4) Perspective (optional): if tool == 'persp' we apply warp using current quad (interpreted in screen space)
-      let finalCanvas = rectCropped;
-      if (tool==='persp'){
-        // take quad points in screen -> map to rotated image coords -> then cut bounding rect and warp to full rect
-        const sp = quad.map(p=>({ sx: p.x*canvas.width, sy: p.y*canvas.height }));
-        const rpImg = sp.map(p=>screenToRotatedImage(p.sx, p.sy));
-        // shift quads so top-left of rectCropped is origin
-        const shifted = rpImg.map(p=>({ x: p.x - rx, y: p.y - ry }));
-        // compute target size: use rectCropped size as destination (keeps user rect)
-        const tw = rectCropped.width, th = rectCropped.height;
-        finalCanvas = warpQuadToRect(rectCropped, [
-          shifted[0], shifted[1], shifted[2], shifted[3]
-        ], tw, th);
-      }
-
-      // 5) Output to blob
-      const blob = await new Promise(res=> finalCanvas.toBlob(res, 'image/png', 1.0));
-      if (!blob){ toastMsg('Не удалось применить правки', false); return; }
-      edited.set(curIndex, new File([blob], `edited-${curIndex+1}.png`, {type:'image/png'}));
-      toastMsg(`Сохранено для ${curIndex+1}-го файла`);
-      renderThumbs();
-    }
-
-    // init quad handles position update every draw
-    function positionQuadUi(){
-      const pts = quad.map(p=>({ x:p.x*canvas.width, y:p.y*canvas.height }));
-      qpts.forEach((el,i)=>{ el.style.left = pts[i].x+'px'; el.style.top = pts[i].y+'px'; });
-    }
-
-    function drawQuadEdges(){
-      // visual is via handles; draw() already refreshes background.
-      positionQuadUi();
-    }
-
-    function render(){
-      draw();
-      drawQuadEdges();
-    }
+    btnPreview.onclick = ()=>{if(longSide.reportValidity())openEditor(0,true);};
 
     // initial
     function init(){ if (fileInp.files.length) renderThumbs(); onChanged(); }
@@ -913,38 +580,49 @@
 
     // ====== NETWORK (respect edited blobs) ======
     async function scanOne(){
-      const n = fileInp.files.length; if (!(n>=1)) return;
+      const n = fileInp.files.length; if (busy || n !== 1 || !longSide.reportValidity()) return;
+      const outputFormat = fmt.value;
+      setBusy(true); clearResult();
       const f = edited.get(0) || fileInp.files[0];
       setProgress(0.15); hint.textContent='Обработка...';
-      const url = buildQuery('/scan');
+      let url = buildQuery('/scan');
+      if (edited.has(0)){
+        const manual = new URL(url, location.href);
+        manual.searchParams.set('align', 'false'); manual.searchParams.set('trim', 'false');
+        url = manual.pathname + manual.search;
+      }
       const fd = new FormData(); fd.append('file', f, f.name);
       try{
         const res = await fetch(url, { method:'POST', body: fd });
         setProgress(0.6);
-        if (!res.ok){ toastMsg('Ошибка: '+res.status,false); hint.textContent='Ошибка'; setProgress(0); return; }
+        if (!res.ok) throw new Error(await responseError(res));
         const ct = res.headers.get('content-type') || '';
         const blob = await res.blob();
         setProgress(0.85);
-        downloads.innerHTML = '';
+        resultUrl = URL.createObjectURL(blob);
         if (ct.startsWith('image/')){
-          const obj = URL.createObjectURL(blob);
+          const obj = resultUrl;
           preview.src = obj; preview.classList.remove('hidden');
-          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download=`scan.${fmt.value}`; a.textContent='Скачать';
+          const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download=`scan.${outputFormat}`; a.textContent='Скачать';
           downloads.appendChild(a);
         } else if (ct === 'application/pdf'){
-          const obj = URL.createObjectURL(blob); window.open(obj,'_blank');
+          const obj = resultUrl;
           const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download='scan.pdf'; a.textContent='Скачать PDF';
           downloads.appendChild(a);
         }
         setProgress(1); hint.textContent='Готово'; toastMsg('Сканирование завершено'); setTimeout(()=>setProgress(0), 1200);
-      }catch(e){ console.error(e); toastMsg('Сетевая ошибка', false); hint.textContent='Ошибка'; setProgress(0); }
+      }catch(e){ console.error(e); toastMsg(e.message || 'Сетевая ошибка', false); hint.textContent=e.message || 'Ошибка'; setProgress(0); }
+      finally{ setBusy(false); }
     }
 
     async function scanBatch(asZip){
-      const files = [...fileInp.files]; if (files.length<2) return;
+      const files = [...fileInp.files]; if (busy || files.length<2 || !longSide.reportValidity()) return;
+      setBusy(true); clearResult();
       setProgress(0.15); hint.textContent='Обработка пакета...';
       const base = buildQuery('/scan/batch');
-      const url = base + (asZip ? '&out=zip&img_fmt=jpg' : '&out=pdf');
+      const manual = new URLSearchParams();
+      files.forEach((file, i)=>{ if (edited.has(i)) manual.append('preserve', String(i)); });
+      const url = base + (asZip ? '&out=zip&img_fmt=jpg' : '&out=pdf') + '&' + manual.toString();
       const fd = new FormData();
       files.forEach((f, i)=>{
         const eff = edited.get(i) || f;
@@ -953,13 +631,13 @@
       try{
         const res = await fetch(url, { method:'POST', body: fd });
         setProgress(0.6);
-        if (!res.ok){ toastMsg('Ошибка: '+res.status,false); hint.textContent='Ошибка'; setProgress(0); return; }
+        if (!res.ok) throw new Error(await responseError(res));
         const ct = res.headers.get('content-type') || '';
         const blob = await res.blob();
         const obj = URL.createObjectURL(blob);
+        resultUrl = obj;
         downloads.innerHTML = '';
         if (ct === 'application/pdf'){
-          window.open(obj,'_blank');
           const a = document.createElement('a'); a.className='btn'; a.href=obj; a.download='scans.pdf'; a.textContent='Скачать PDF';
           downloads.appendChild(a);
         } else if (ct === 'application/zip'){
@@ -967,7 +645,8 @@
           downloads.appendChild(a);
         }
         setProgress(1); hint.textContent='Готово'; toastMsg('Пакет готов'); setTimeout(()=>setProgress(0), 1200);
-      }catch(e){ console.error(e); toastMsg('Сетевая ошибка', false); hint.textContent='Ошибка'; setProgress(0); }
+      }catch(e){ console.error(e); toastMsg(e.message || 'Сетевая ошибка', false); hint.textContent=e.message || 'Ошибка'; setProgress(0); }
+      finally{ setBusy(false); }
     }
 
     btnOne.onclick = (e)=>{ e.preventDefault(); scanOne(); };
